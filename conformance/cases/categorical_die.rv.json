@@ -1,0 +1,33 @@
+{
+  "format_version": "1.0.0",
+  "metadata": {
+    "name": "categorical_die"
+  },
+  "rv": {
+    "capabilities": {
+      "can_cdf": true,
+      "can_log_prob": true,
+      "can_sample": true
+    },
+    "dist": "categorical",
+    "kind": "leaf",
+    "params": {
+      "categories": [
+        1.0,
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0
+      ],
+      "probs": [
+        0.16666666666666666,
+        0.16666666666666666,
+        0.16666666666666666,
+        0.16666666666666666,
+        0.16666666666666666,
+        0.16666666666666666
+      ]
+    }
+  }
+}

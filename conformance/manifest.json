@@ -1,0 +1,124 @@
+{
+  "cases": [
+    {
+      "case": "cases/normal_standard.rv.json",
+      "description": "Standard normal N(mu=0, sigma=1).",
+      "golden": "golden/normal_standard.json",
+      "kind": "leaf",
+      "name": "normal_standard"
+    },
+    {
+      "case": "cases/normal_shifted.rv.json",
+      "description": "Shifted/scaled normal N(mu=2, sigma=3).",
+      "golden": "golden/normal_shifted.json",
+      "kind": "leaf",
+      "name": "normal_shifted"
+    },
+    {
+      "case": "cases/lognormal_basic.rv.json",
+      "description": "Lognormal with underlying normal N(0,1): log(X)~N(0,1).",
+      "golden": "golden/lognormal_basic.json",
+      "kind": "leaf",
+      "name": "lognormal_basic"
+    },
+    {
+      "case": "cases/weibull_strength.rv.json",
+      "description": "Weibull fracture strength, shape=10, scale=350 MPa (materials example).",
+      "golden": "golden/weibull_strength.json",
+      "kind": "leaf",
+      "name": "weibull_strength"
+    },
+    {
+      "case": "cases/uniform_unit.rv.json",
+      "description": "Uniform on [0, 1].",
+      "golden": "golden/uniform_unit.json",
+      "kind": "leaf",
+      "name": "uniform_unit"
+    },
+    {
+      "case": "cases/uniform_range.rv.json",
+      "description": "Uniform on [-2, 5].",
+      "golden": "golden/uniform_range.json",
+      "kind": "leaf",
+      "name": "uniform_range"
+    },
+    {
+      "case": "cases/exponential_basic.rv.json",
+      "description": "Exponential with rate=1.5.",
+      "golden": "golden/exponential_basic.json",
+      "kind": "leaf",
+      "name": "exponential_basic"
+    },
+    {
+      "case": "cases/gamma_basic.rv.json",
+      "description": "Gamma with shape=2, scale=2.",
+      "golden": "golden/gamma_basic.json",
+      "kind": "leaf",
+      "name": "gamma_basic"
+    },
+    {
+      "case": "cases/beta_basic.rv.json",
+      "description": "Beta with alpha=2, beta=5.",
+      "golden": "golden/beta_basic.json",
+      "kind": "leaf",
+      "name": "beta_basic"
+    },
+    {
+      "case": "cases/categorical_die.rv.json",
+      "description": "Fair six-sided die: categories 1..6, equal probabilities.",
+      "golden": "golden/categorical_die.json",
+      "kind": "leaf",
+      "name": "categorical_die"
+    },
+    {
+      "case": "cases/empirical_samples.rv.json",
+      "description": "Empirical leaf: 2000 inline samples from N(0,1); log_prob via Gaussian KDE (Scott).",
+      "golden": "golden/empirical_samples.json",
+      "kind": "leaf",
+      "name": "empirical_samples"
+    },
+    {
+      "case": "cases/joint_normal_uniform.rv.json",
+      "description": "Independent joint of N(0,1) and Uniform(0,1).",
+      "golden": "golden/joint_normal_uniform.json",
+      "kind": "joint",
+      "name": "joint_normal_uniform"
+    },
+    {
+      "case": "cases/mixture_bimodal.rv.json",
+      "description": "Bimodal microstructure: 0.7*Lognormal(1,0.3) + 0.3*Lognormal(2.5,0.4).",
+      "golden": "golden/mixture_bimodal.json",
+      "kind": "mixture",
+      "name": "mixture_bimodal"
+    },
+    {
+      "case": "cases/transform_exp_normal.rv.json",
+      "description": "Y = exp(X), X~N(0,1). Invertible; equals Lognormal(0,1).",
+      "golden": "golden/transform_exp_normal.json",
+      "kind": "transform",
+      "name": "transform_exp_normal"
+    },
+    {
+      "case": "cases/transform_affine_normal.rv.json",
+      "description": "Y = 2X + 1, X~N(0,1). Invertible; equals N(1,2).",
+      "golden": "golden/transform_affine_normal.json",
+      "kind": "transform",
+      "name": "transform_affine_normal"
+    },
+    {
+      "case": "cases/transform_abs_normal.rv.json",
+      "description": "Y = |X|, X~N(0,1). Non-invertible: log_prob and cdf unavailable.",
+      "golden": "golden/transform_abs_normal.json",
+      "kind": "transform",
+      "name": "transform_abs_normal"
+    },
+    {
+      "case": "cases/nested_mixture_transform.rv.json",
+      "description": "Depth-2 nesting: 0.6*N(0,1) + 0.4*exp(N(0,1)). Exercises recursion through mixture and transform.",
+      "golden": "golden/nested_mixture_transform.json",
+      "kind": "mixture",
+      "name": "nested_mixture_transform"
+    }
+  ],
+  "format_version": "1.0.0"
+}

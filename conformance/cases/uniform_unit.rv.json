@@ -1,0 +1,19 @@
+{
+  "format_version": "1.0.0",
+  "metadata": {
+    "name": "uniform_unit"
+  },
+  "rv": {
+    "capabilities": {
+      "can_cdf": true,
+      "can_log_prob": true,
+      "can_sample": true
+    },
+    "dist": "uniform",
+    "kind": "leaf",
+    "params": {
+      "high": 1.0,
+      "low": 0.0
+    }
+  }
+}

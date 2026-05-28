@@ -1,0 +1,62 @@
+{
+  "capabilities": {
+    "can_cdf": true,
+    "can_log_prob": true,
+    "can_sample": true
+  },
+  "case": "nested_mixture_transform",
+  "cdf": [
+    {
+      "value": 0.09519315235887424,
+      "x": -1.0
+    },
+    {
+      "value": 0.512520915078641,
+      "x": 0.5
+    },
+    {
+      "value": 0.7048068476411258,
+      "x": 1.0
+    },
+    {
+      "value": 0.8887064825168594,
+      "x": 2.0
+    },
+    {
+      "value": 0.9668495896542207,
+      "x": 4.0
+    }
+  ],
+  "format_version": "1.0.0",
+  "kind": "mixture",
+  "log_prob": [
+    {
+      "value": -1.9297641569706634,
+      "x": -1.0
+    },
+    {
+      "value": -0.7716761761798017,
+      "x": 0.5
+    },
+    {
+      "value": -1.188232840469075,
+      "x": 1.0
+    },
+    {
+      "value": -2.3523617736060425,
+      "x": 2.0
+    },
+    {
+      "value": -4.177181923190069,
+      "x": 4.0
+    }
+  ],
+  "moments": null,
+  "sampling": {
+    "ks_stat_max": 0.02,
+    "mean_atol": 0.05,
+    "n": 200000,
+    "seed": 12345,
+    "var_rtol": 0.05
+  }
+}

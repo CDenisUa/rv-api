@@ -1,0 +1,19 @@
+{
+  "format_version": "1.0.0",
+  "metadata": {
+    "name": "beta_basic"
+  },
+  "rv": {
+    "capabilities": {
+      "can_cdf": true,
+      "can_log_prob": true,
+      "can_sample": true
+    },
+    "dist": "beta",
+    "kind": "leaf",
+    "params": {
+      "alpha": 2.0,
+      "beta": 5.0
+    }
+  }
+}

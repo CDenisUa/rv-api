@@ -1,0 +1,19 @@
+{
+  "format_version": "1.0.0",
+  "metadata": {
+    "name": "weibull_strength"
+  },
+  "rv": {
+    "capabilities": {
+      "can_cdf": true,
+      "can_log_prob": true,
+      "can_sample": true
+    },
+    "dist": "weibull",
+    "kind": "leaf",
+    "params": {
+      "scale": 350.0,
+      "shape": 10.0
+    }
+  }
+}

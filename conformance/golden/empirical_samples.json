@@ -1,0 +1,65 @@
+{
+  "capabilities": {
+    "can_cdf": true,
+    "can_log_prob": true,
+    "can_sample": true
+  },
+  "case": "empirical_samples",
+  "cdf": [
+    {
+      "value": 0.0235,
+      "x": -2.0
+    },
+    {
+      "value": 0.164,
+      "x": -1.0
+    },
+    {
+      "value": 0.5355,
+      "x": 0.0
+    },
+    {
+      "value": 0.849,
+      "x": 1.0
+    },
+    {
+      "value": 0.976,
+      "x": 2.0
+    }
+  ],
+  "format_version": "1.0.0",
+  "kind": "leaf",
+  "log_prob": [
+    {
+      "value": -2.814676064561977,
+      "x": -2.0
+    },
+    {
+      "value": -1.3281242443653039,
+      "x": -1.0
+    },
+    {
+      "value": -0.8689521127401195,
+      "x": 0.0
+    },
+    {
+      "value": -1.4886352160637784,
+      "x": 1.0
+    },
+    {
+      "value": -2.8941857472325343,
+      "x": 2.0
+    }
+  ],
+  "moments": {
+    "mean": -0.03995353537863318,
+    "variance": 0.9695261948825918
+  },
+  "sampling": {
+    "ks_stat_max": 0.05,
+    "mean_atol": 0.1,
+    "n": 200000,
+    "seed": 12345,
+    "var_rtol": 0.1
+  }
+}

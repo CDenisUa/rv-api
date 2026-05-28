@@ -1,0 +1,65 @@
+{
+  "capabilities": {
+    "can_cdf": true,
+    "can_log_prob": true,
+    "can_sample": true
+  },
+  "case": "uniform_unit",
+  "cdf": [
+    {
+      "value": 0.0,
+      "x": 0.0
+    },
+    {
+      "value": 0.25,
+      "x": 0.25
+    },
+    {
+      "value": 0.5,
+      "x": 0.5
+    },
+    {
+      "value": 0.75,
+      "x": 0.75
+    },
+    {
+      "value": 1.0,
+      "x": 1.0
+    }
+  ],
+  "format_version": "1.0.0",
+  "kind": "leaf",
+  "log_prob": [
+    {
+      "value": 0.0,
+      "x": 0.0
+    },
+    {
+      "value": 0.0,
+      "x": 0.25
+    },
+    {
+      "value": 0.0,
+      "x": 0.5
+    },
+    {
+      "value": 0.0,
+      "x": 0.75
+    },
+    {
+      "value": 0.0,
+      "x": 1.0
+    }
+  ],
+  "moments": {
+    "mean": 0.5,
+    "variance": 0.08333333333333333
+  },
+  "sampling": {
+    "ks_stat_max": 0.02,
+    "mean_atol": 0.05,
+    "n": 200000,
+    "seed": 12345,
+    "var_rtol": 0.05
+  }
+}

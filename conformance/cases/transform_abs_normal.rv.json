@@ -1,0 +1,25 @@
+{
+  "format_version": "1.0.0",
+  "metadata": {
+    "name": "transform_abs_normal"
+  },
+  "rv": {
+    "base": {
+      "dist": "normal",
+      "kind": "leaf",
+      "params": {
+        "mu": 0.0,
+        "sigma": 1.0
+      }
+    },
+    "capabilities": {
+      "can_cdf": false,
+      "can_log_prob": false,
+      "can_sample": true
+    },
+    "kind": "transform",
+    "op": {
+      "name": "abs"
+    }
+  }
+}

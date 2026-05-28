@@ -1,0 +1,20 @@
+{
+  "capabilities": {
+    "can_cdf": false,
+    "can_log_prob": false,
+    "can_sample": true
+  },
+  "case": "transform_abs_normal",
+  "cdf": null,
+  "format_version": "1.0.0",
+  "kind": "transform",
+  "log_prob": null,
+  "moments": null,
+  "sampling": {
+    "ks_stat_max": null,
+    "mean_atol": 0.05,
+    "n": 200000,
+    "seed": 12345,
+    "var_rtol": 0.05
+  }
+}

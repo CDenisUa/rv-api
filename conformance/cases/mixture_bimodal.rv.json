@@ -1,0 +1,36 @@
+{
+  "format_version": "1.0.0",
+  "metadata": {
+    "name": "mixture_bimodal"
+  },
+  "rv": {
+    "capabilities": {
+      "can_cdf": true,
+      "can_log_prob": true,
+      "can_sample": true
+    },
+    "components": [
+      {
+        "dist": "lognormal",
+        "kind": "leaf",
+        "params": {
+          "mu": 1.0,
+          "sigma": 0.3
+        }
+      },
+      {
+        "dist": "lognormal",
+        "kind": "leaf",
+        "params": {
+          "mu": 2.5,
+          "sigma": 0.4
+        }
+      }
+    ],
+    "kind": "mixture",
+    "weights": [
+      0.7,
+      0.3
+    ]
+  }
+}

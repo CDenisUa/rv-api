@@ -1,0 +1,18 @@
+{
+  "format_version": "1.0.0",
+  "metadata": {
+    "name": "exponential_basic"
+  },
+  "rv": {
+    "capabilities": {
+      "can_cdf": true,
+      "can_log_prob": true,
+      "can_sample": true
+    },
+    "dist": "exponential",
+    "kind": "leaf",
+    "params": {
+      "rate": 1.5
+    }
+  }
+}

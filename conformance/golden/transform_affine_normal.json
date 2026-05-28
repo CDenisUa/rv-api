@@ -1,0 +1,65 @@
+{
+  "capabilities": {
+    "can_cdf": true,
+    "can_log_prob": true,
+    "can_sample": true
+  },
+  "case": "transform_affine_normal",
+  "cdf": [
+    {
+      "value": 0.022750131948179198,
+      "x": -3.0
+    },
+    {
+      "value": 0.15865525393145707,
+      "x": -1.0
+    },
+    {
+      "value": 0.5,
+      "x": 1.0
+    },
+    {
+      "value": 0.8413447460685429,
+      "x": 3.0
+    },
+    {
+      "value": 0.9772498680518208,
+      "x": 5.0
+    }
+  ],
+  "format_version": "1.0.0",
+  "kind": "transform",
+  "log_prob": [
+    {
+      "value": -3.612085713764618,
+      "x": -3.0
+    },
+    {
+      "value": -2.112085713764618,
+      "x": -1.0
+    },
+    {
+      "value": -1.612085713764618,
+      "x": 1.0
+    },
+    {
+      "value": -2.112085713764618,
+      "x": 3.0
+    },
+    {
+      "value": -3.612085713764618,
+      "x": 5.0
+    }
+  ],
+  "moments": {
+    "mean": 1.0,
+    "variance": 4.0
+  },
+  "sampling": {
+    "ks_stat_max": 0.02,
+    "mean_atol": 0.05,
+    "n": 200000,
+    "seed": 12345,
+    "var_rtol": 0.05
+  }
+}
