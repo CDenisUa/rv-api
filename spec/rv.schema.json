@@ -1,0 +1,330 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcl.example/rv-exchange/v1/rv.schema.json",
+  "title": "RV Exchange Format v1",
+  "description": "Portable, language-neutral serialization of a random variable. The document wraps a single root RV node. An RV node is a recursive tagged union over four semantic kinds: leaf | joint | mixture | transform.",
+  "type": "object",
+  "required": ["format_version", "rv"],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "description": "Semantic version of the RV Exchange Format this document conforms to.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "metadata": {
+      "description": "Optional, non-semantic annotations (name, source, units, comments). Ignored by operations.",
+      "type": "object"
+    },
+    "rv": { "$ref": "#/$defs/rv" }
+  },
+
+  "$defs": {
+    "rv": {
+      "description": "A random variable node. Discriminated by the `kind` field.",
+      "oneOf": [
+        { "$ref": "#/$defs/leaf" },
+        { "$ref": "#/$defs/joint" },
+        { "$ref": "#/$defs/mixture" },
+        { "$ref": "#/$defs/transform" }
+      ]
+    },
+
+    "capabilities": {
+      "description": "Declared operations the RV supports. MUST be revalidated by the consumer against the structural rules in SPEC.md; a mismatch is a hard error.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "can_sample": { "type": "boolean" },
+        "can_log_prob": { "type": "boolean" },
+        "can_cdf": { "type": "boolean" }
+      }
+    },
+
+    "support": {
+      "description": "Optional declared support (domain) of the RV. Bounds may be omitted to denote ±infinity.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lower": { "type": "number" },
+        "upper": { "type": "number" },
+        "lower_inclusive": { "type": "boolean", "default": true },
+        "upper_inclusive": { "type": "boolean", "default": true }
+      }
+    },
+
+    "bulk_ref": {
+      "description": "Reference to a 1-D numeric array. Large arrays live in an external `.npy` sidecar referenced by path; small arrays may be inlined as base64. This keeps structural parse time independent of sample count.",
+      "type": "object",
+      "required": ["format", "dtype", "shape"],
+      "additionalProperties": false,
+      "properties": {
+        "format": { "enum": ["npy", "base64"] },
+        "dtype": { "enum": ["float32", "float64", "int32", "int64"] },
+        "shape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "path": {
+          "description": "Relative path or URI to a .npy file. Required when format=npy.",
+          "type": "string"
+        },
+        "data": {
+          "description": "Base64-encoded little-endian raw buffer. Required when format=base64. Recommended only for arrays under ~1024 elements.",
+          "type": "string",
+          "contentEncoding": "base64"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "format": { "const": "npy" } } },
+          "then": { "required": ["path"] }
+        },
+        {
+          "if": { "properties": { "format": { "const": "base64" } } },
+          "then": { "required": ["data"] }
+        }
+      ]
+    },
+
+    "leaf": {
+      "description": "An atomic distribution. The concrete distribution is selected by `dist` and parameterized by `params` using canonical, library-independent parameter names (see SPEC.md).",
+      "type": "object",
+      "required": ["kind", "dist", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "leaf" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "support": { "$ref": "#/$defs/support" },
+        "metadata": { "type": "object" },
+        "dist": {
+          "enum": [
+            "normal", "lognormal", "weibull", "uniform",
+            "exponential", "gamma", "beta",
+            "categorical", "empirical"
+          ]
+        },
+        "params": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "dist": { "const": "normal" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_normal" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "lognormal" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_lognormal" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "weibull" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_weibull" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "uniform" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_uniform" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "exponential" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_exponential" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "gamma" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_gamma" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "beta" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_beta" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "categorical" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_categorical" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "empirical" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_empirical" } } }
+        }
+      ]
+    },
+
+    "params_normal": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mu", "sigma"],
+      "properties": {
+        "mu": { "type": "number" },
+        "sigma": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "params_lognormal": {
+      "description": "Parameterized by the mean (mu) and std-dev (sigma) of the underlying normal in log-space. NOTE: this differs from scipy's (s, scale) parameterization; adapters MUST map explicitly.",
+      "type": "object", "additionalProperties": false,
+      "required": ["mu", "sigma"],
+      "properties": {
+        "mu": { "type": "number" },
+        "sigma": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "params_weibull": {
+      "type": "object", "additionalProperties": false,
+      "required": ["shape", "scale"],
+      "properties": {
+        "shape": { "type": "number", "exclusiveMinimum": 0 },
+        "scale": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "params_uniform": {
+      "type": "object", "additionalProperties": false,
+      "required": ["low", "high"],
+      "properties": {
+        "low": { "type": "number" },
+        "high": { "type": "number" }
+      }
+    },
+    "params_exponential": {
+      "type": "object", "additionalProperties": false,
+      "required": ["rate"],
+      "properties": {
+        "rate": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "params_gamma": {
+      "type": "object", "additionalProperties": false,
+      "required": ["shape", "scale"],
+      "properties": {
+        "shape": { "type": "number", "exclusiveMinimum": 0 },
+        "scale": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "params_beta": {
+      "type": "object", "additionalProperties": false,
+      "required": ["alpha", "beta"],
+      "properties": {
+        "alpha": { "type": "number", "exclusiveMinimum": 0 },
+        "beta": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "params_categorical": {
+      "description": "Finite discrete distribution. `categories` and `probs` are positionally aligned; `probs` must be non-negative and sum to 1 (within tolerance).",
+      "type": "object", "additionalProperties": false,
+      "required": ["categories", "probs"],
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "probs": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 1
+        }
+      }
+    },
+    "params_empirical": {
+      "description": "Sample-based distribution. Bulk sample data is carried by a bulk_ref (npy sidecar or inline base64).",
+      "type": "object", "additionalProperties": false,
+      "required": ["samples"],
+      "properties": {
+        "samples": { "$ref": "#/$defs/bulk_ref" }
+      }
+    },
+
+    "joint": {
+      "description": "Independent composition over dimensions. The joint density is the product of its dimensions' densities.",
+      "type": "object",
+      "required": ["kind", "dims"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "joint" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "metadata": { "type": "object" },
+        "dims": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/rv" },
+          "minItems": 1
+        }
+      }
+    },
+
+    "mixture": {
+      "description": "Weighted combination over components. `weights` and `components` are positionally aligned; weights must be non-negative and sum to 1 (within tolerance).",
+      "type": "object",
+      "required": ["kind", "weights", "components"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "mixture" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "metadata": { "type": "object" },
+        "weights": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 1
+        },
+        "components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/rv" },
+          "minItems": 1
+        }
+      }
+    },
+
+    "transform": {
+      "description": "Deterministic transformation Y = op(X) of a base RV X. Invertible+differentiable ops preserve can_log_prob via change-of-variables; non-invertible ops (e.g. abs) drop it.",
+      "type": "object",
+      "required": ["kind", "base", "op"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "transform" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "metadata": { "type": "object" },
+        "base": { "$ref": "#/$defs/rv" },
+        "op": { "$ref": "#/$defs/op" }
+      }
+    },
+
+    "op": {
+      "description": "A scalar deterministic operation applied elementwise to the base RV.",
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "enum": ["affine", "exp", "log", "pow", "abs"] },
+        "params": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "name": { "const": "affine" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": {
+                "type": "object", "additionalProperties": false,
+                "required": ["a", "b"],
+                "properties": {
+                  "a": { "type": "number", "not": { "const": 0 } },
+                  "b": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "name": { "const": "pow" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": {
+                "type": "object", "additionalProperties": false,
+                "required": ["exponent"],
+                "properties": {
+                  "exponent": { "type": "number", "not": { "const": 0 } }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
