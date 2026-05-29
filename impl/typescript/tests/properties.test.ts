@@ -18,20 +18,11 @@ import {
   CapabilityMismatch,
   ValidationError,
 } from '../src/index'
+// Utils
+import { ksStatistic } from './helpers'
 
 function normalDoc(mu: number, sigma: number) {
   return { format_version: '1.0.0', rv: { kind: 'leaf', dist: 'normal', params: { mu, sigma } } }
-}
-
-function ksStatistic(xs: Float64Array, F: (x: number) => number): number {
-  const sorted = Float64Array.from(xs).sort()
-  const n = sorted.length
-  let d = 0
-  for (let i = 0; i < n; i++) {
-    const f = F(sorted[i]!)
-    d = Math.max(d, (i + 1) / n - f, f - i / n)
-  }
-  return d
 }
 
 describe('round-trip identity', () => {

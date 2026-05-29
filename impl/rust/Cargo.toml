@@ -1,0 +1,32 @@
+[package]
+name = "rvx"
+version = "1.0.0"
+edition = "2021"
+description = "Reference Rust implementation of the RV Exchange Format v1 (systems / WASM core)."
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+wasm-bindgen = { version = "0.2", optional = true }
+
+[features]
+# `wasm` exposes a wasm-bindgen surface; the core crate compiles and tests without it.
+wasm = ["dep:wasm-bindgen"]
+
+[dev-dependencies]
+proptest = "1"
+criterion = "0.5"
+jsonschema = "0.46.5"
+
+[[bench]]
+name = "rv_bench"
+harness = false
+
+[profile.release]
+lto = true
+opt-level = 3

@@ -11,3 +11,6 @@ venv/
 
 # Node / TypeScript
 node_modules/
+
+# Rust
+target/

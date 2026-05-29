@@ -156,11 +156,14 @@ class SampleVisitor implements RVVisitor<SampleResult> {
     return node.dims.map((dim) => visit(dim, this) as Float64Array)
   }
   mixture(node: Mixture): SampleResult {
+    // Bucket draw positions by component in one O(n) pass, then sample each component once and
+    // scatter back — O(n + k) rather than scanning all n per component.
     const idx = new AliasSampler(node.weights).sample(this.rng, this.n)
+    const buckets: number[][] = node.components.map(() => [])
+    for (let j = 0; j < this.n; j++) buckets[idx[j]!]!.push(j)
     const out = new Float64Array(this.n)
     for (let i = 0; i < node.components.length; i++) {
-      const positions: number[] = []
-      for (let j = 0; j < this.n; j++) if (idx[j] === i) positions.push(j)
+      const positions = buckets[i]!
       if (positions.length === 0) continue
       const drawn = visit(node.components[i]!, new SampleVisitor(this.rng, positions.length)) as Float64Array
       for (let j = 0; j < positions.length; j++) out[positions[j]!] = drawn[j]!

@@ -17,6 +17,8 @@ import addFormats from 'ajv-formats'
 // Under test
 import { capabilities, cdf, logProb, moments, parseDocument, sample, RNG } from '../src/index'
 import { MomentsNotAvailable } from '../src/errors'
+// Utils
+import { ksStatistic, populationStats } from './helpers'
 
 const ABS_TOL = 1e-9
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -50,27 +52,6 @@ const validateSchema = ajv.compile(schema)
 
 function asArray(m: number | number[]): number[] {
   return Array.isArray(m) ? m : [m]
-}
-
-function populationStats(xs: Float64Array): { mean: number; variance: number } {
-  let sum = 0
-  for (const v of xs) sum += v
-  const mean = sum / xs.length
-  let ss = 0
-  for (const v of xs) ss += (v - mean) * (v - mean)
-  return { mean, variance: ss / xs.length }
-}
-
-/** One-sample Kolmogorov–Smirnov statistic of `xs` against the continuous CDF `F`. */
-function ksStatistic(xs: Float64Array, F: (x: number) => number): number {
-  const sorted = Float64Array.from(xs).sort()
-  const n = sorted.length
-  let d = 0
-  for (let i = 0; i < n; i++) {
-    const f = F(sorted[i]!)
-    d = Math.max(d, (i + 1) / n - f, f - i / n)
-  }
-  return d
 }
 
 describe('conformance suite', () => {
