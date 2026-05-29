@@ -4,10 +4,13 @@ The demo dashboard for the RV Exchange Format: build a random variable in the br
 sampled live, and see the **same `.rv.json` evaluated identically by Python, TypeScript, and Rust**.
 
 ```bash
-npm install
-npm run dev        # http://localhost:3000
-npm run build      # production build
+pnpm install
+pnpm run dev        # http://localhost:3000
+pnpm run build      # production build
 ```
+
+> Uses **pnpm**. `package.json` marks `sharp` as an allowed build dependency
+> (`pnpm.onlyBuiltDependencies`) so install isn't blocked by pnpm's ignored-builds guard.
 
 > Requires the sibling `impl/typescript` package (linked via `file:../impl/typescript`) and the
 > `conformance/` directory at the repo root (read at render time for the evidence panel).

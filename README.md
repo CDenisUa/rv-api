@@ -54,8 +54,8 @@ cd impl/rust       && cargo test                            # conformance + prop
 # Cross-language evidence pack:
 PYTHONPATH=impl/python/src python3 evidence/build_evidence.py
 
-# Demo dashboard:
-cd demo && npm install && npm run dev                        # http://localhost:3000
+# Demo dashboard (uses pnpm):
+cd demo && pnpm install && pnpm run dev                      # http://localhost:3000
 ```
 
 ## Design principles

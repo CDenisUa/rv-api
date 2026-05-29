@@ -66,18 +66,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install TypeScript engine
-        working-directory: impl/typescript
-        run: npm ci
-      - name: Install demo
+          cache: pnpm
+          cache-dependency-path: demo/pnpm-lock.yaml
+      # `file:../impl/typescript` links the rvx engine and pnpm pulls in its deps (zod).
+      - name: Install
         working-directory: demo
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Build
         working-directory: demo
-        run: npm run build
+        run: pnpm run build
 
   evidence:
     name: Cross-language evidence pack

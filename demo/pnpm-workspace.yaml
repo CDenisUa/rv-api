@@ -1,0 +1,4 @@
+# Allow Next.js's `sharp` to run its build script, so `pnpm install` isn't blocked by pnpm's
+# ignored-builds guard. (The demo uses a plain <img>, not next/image, so sharp is otherwise inert.)
+onlyBuiltDependencies:
+  - sharp
