@@ -169,6 +169,17 @@ def main():
         f.write(render(reports))
     print(f"Wrote {out_path}")
 
+    # Fail (for CI) if any implementation disagrees with golden beyond tolerance.
+    failures = [
+        f"{r['language']}/{c['name']}: {c['max_abs_error']:.2e}"
+        for r in reports
+        for c in r["cases"]
+        if c["comparisons"] and c["max_abs_error"] > TOL
+    ]
+    if failures:
+        sys.exit("conformance mismatch (> 1e-9):\n  " + "\n  ".join(failures))
+    print(f"All implementations agree within {TOL:g}.")
+
 
 if __name__ == "__main__":
     main()

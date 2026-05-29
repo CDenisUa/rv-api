@@ -17,10 +17,11 @@ npm run build      # production build
 - **RV builder** — pick a leaf distribution, a deterministic transform of one, or a two-component
   mixture; tweak parameters and watch the portable `.rv.json` update live (copy it, hand it to any
   implementation).
-- **Live sampling + density overlay** — samples are drawn off the main thread in a **Web Worker** by
-  the TypeScript `rvx` engine (so the UI stays smooth at 200k draws); the analytic density is
-  overlaid by the same engine. Non-invertible transforms (e.g. `abs`) honestly drop `log_prob`/`cdf`,
-  which the capability badges reflect.
+- **Live sampling + density overlay** — samples are drawn off the main thread in a **Web Worker** (so
+  the UI stays smooth at 200k draws); the analytic density is overlaid. An engine toggle switches the
+  worker between the **TypeScript** reference and the **Rust core compiled to WebAssembly** — same
+  `.rv.json`, same histogram, two engines. Non-invertible transforms (e.g. `abs`) honestly drop
+  `log_prob`/`cdf`, which the capability badges reflect.
 - **Python == TypeScript == Rust** — a **server-rendered** table that recomputes every conformance
   golden value (produced by scipy, verified by Rust) with the TypeScript engine at request time and
   shows the worst deviation per case. No client JavaScript for this proof.
@@ -45,8 +46,32 @@ server rendering. No charting dependency — the histogram is hand-drawn SVG to 
 The TypeScript reference (`rvx`) runs unchanged in three places here: the Web Worker (sampling), the
 main thread (live density), and the server (the conformance proof).
 
+## Deploy (Vercel)
+
+The demo lives in this subdirectory of the monorepo. In the Vercel project settings set
+**Root Directory = `demo`** (Next.js is auto-detected; no `vercel.json` needed). Then:
+
+```bash
+npm i -g vercel
+vercel            # link + preview deploy
+vercel --prod     # production
+```
+
+The committed `wasm-rvx/` lets the build run without a Rust toolchain.
+
+## The WASM engine
+
+`wasm-rvx/` is generated from the Rust crate and committed so the demo builds anywhere. Regenerate
+after changing `impl/rust`:
+
+```bash
+cd impl/rust && wasm-pack build --release --target bundler --out-dir ../../demo/wasm-rvx --features wasm
+```
+
+`next.config.mjs` enables webpack's `asyncWebAssembly` so the worker can import it.
+
 ## Notes
 
 - `public/images/icons/logo_designed.svg` is a placeholder — replace with the real brand asset.
-- A Rust → WebAssembly sampler can drop into the worker later (the Rust crate already builds to
-  `wasm32-unknown-unknown`); the TypeScript sampler is the default path.
+- The interactive UI (worker, chart) is build- and SSR-verified; give it a visual pass in a browser
+  (`npm run dev`) before shipping.

@@ -56,9 +56,9 @@ TypeScript and Rust evaluate scalars in tight loops), so read those rows per-lan
 
 | metric | Python | TypeScript | Rust |
 |---|---|---|---|
-| sample (ns / draw) | 14.1 | 31.1 | 26.5 |
-| normal log_prob (ns / call) | 15.1 | 59.5 | 7.7 |
-| gamma cdf (ns / call) | 46.4 | 123.1 | 40.9 |
+| sample (ns / draw) | 18.0 | 32.3 | 11.8 |
+| normal log_prob (ns / call) | 22.5 | 61.4 | 8.6 |
+| gamma cdf (ns / call) | 65.6 | 156.4 | 37.7 |
 
 The Rust core also compiles to `wasm32-unknown-unknown` (~337 KB), so the same verified engine runs
 natively, in Node, and in the browser (the demo samples in a Web Worker).

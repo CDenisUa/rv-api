@@ -1,0 +1,100 @@
+name: CI
+
+# The conformance suite is the contract: every implementation must reproduce the shared golden
+# values within 1e-9. This workflow runs all three suites plus the evidence pack on every push/PR.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python:
+    name: Python reference (rvx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: pip install numpy scipy pytest hypothesis jsonschema
+      - name: Conformance + property tests
+        working-directory: impl/python
+        run: PYTHONPATH=src python -m pytest -q
+
+  typescript:
+    name: TypeScript reference (rvx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install
+        working-directory: impl/typescript
+        run: npm ci
+      - name: Typecheck
+        working-directory: impl/typescript
+        run: npm run typecheck
+      - name: Conformance + property tests
+        working-directory: impl/typescript
+        run: npm test
+
+  rust:
+    name: Rust reference (rvx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: wasm32-unknown-unknown
+      - name: Clippy
+        working-directory: impl/rust
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Conformance + property tests
+        working-directory: impl/rust
+        run: cargo test
+      - name: WASM build
+        working-directory: impl/rust
+        run: cargo build --release --target wasm32-unknown-unknown --features wasm
+
+  demo:
+    name: Demo build (Next.js)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install TypeScript engine
+        working-directory: impl/typescript
+        run: npm ci
+      - name: Install demo
+        working-directory: demo
+        run: npm ci
+      - name: Build
+        working-directory: demo
+        run: npm run build
+
+  evidence:
+    name: Cross-language evidence pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Python deps
+        run: pip install numpy scipy
+      - name: Install TypeScript engine
+        working-directory: impl/typescript
+        run: npm ci
+      - name: Generate evidence pack (exits non-zero on any cross-language mismatch > 1e-9)
+        run: PYTHONPATH=impl/python/src python evidence/build_evidence.py

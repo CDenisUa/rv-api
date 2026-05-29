@@ -2,7 +2,7 @@
 // responses are matched correctly.
 
 // Types
-import type { SampleRequest, SampleResponse } from '@/types/rv-form'
+import type { Engine, SampleRequest, SampleResponse } from '@/types/rv-form'
 
 export class SamplerClient {
   private worker: Worker
@@ -20,9 +20,9 @@ export class SamplerClient {
     }
   }
 
-  sample(doc: unknown, n: number, seed: number): Promise<SampleResponse> {
+  sample(doc: unknown, n: number, seed: number, engine: Engine): Promise<SampleResponse> {
     const id = ++this.seq
-    const request: SampleRequest = { id, doc, n, seed }
+    const request: SampleRequest = { id, doc, n, seed, engine }
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject })
       this.worker.postMessage(request)

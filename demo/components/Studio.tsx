@@ -17,6 +17,8 @@ import { curve, histogram, sampleRange } from '@/lib/histogram'
 import { fmt, fmtMoment } from '@/lib/format'
 // Consts
 import { PRESETS } from '@/lib/presets'
+// Types
+import type { Engine } from '@/types/rv-form'
 
 interface Analysis {
   node: RVNode | null
@@ -48,12 +50,13 @@ export function Studio() {
   const [state, setState] = useState(PRESETS[0].state)
   const [n, setN] = useState(50_000)
   const [seed, setSeed] = useState(12345)
+  const [engine, setEngine] = useState<Engine>('ts')
 
   const doc = useMemo(() => buildDocument(state), [state])
   const docKey = useMemo(() => JSON.stringify(doc), [doc])
   // Cheap analytics on the main thread; heavy sampling in the worker.
   const analysis = useMemo(() => analyze(doc), [docKey])
-  const { samples, mean, variance, loading, error: sampleError } = useSampler(doc, n, seed)
+  const { samples, mean, variance, loading, error: sampleError } = useSampler(doc, n, seed, engine)
 
   const range = useMemo(() => (samples ? sampleRange(samples) : { min: 0, max: 1 }), [samples])
   const bins = useMemo(() => (samples ? histogram(samples, range) : []), [samples, range])
@@ -84,6 +87,19 @@ export function Studio() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <CapabilitiesBadges capabilities={analysis.caps!} />
               <div className="flex items-center gap-2 text-sm">
+                <div className="inline-flex rounded-md bg-slate-800 p-0.5 ring-1 ring-slate-700" title="Sample with the TypeScript reference or the Rust core compiled to WebAssembly">
+                  {(['ts', 'wasm'] as Engine[]).map((eng) => (
+                    <button
+                      key={eng}
+                      onClick={() => setEngine(eng)}
+                      className={`rounded px-2.5 py-1 text-xs font-medium transition ${
+                        engine === eng ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      {eng === 'ts' ? 'TypeScript' : 'Rust · WASM'}
+                    </button>
+                  ))}
+                </div>
                 <label className="text-slate-400">n</label>
                 <select
                   value={n}
@@ -120,9 +136,10 @@ export function Studio() {
               <Stat label="analytic var" value={analysis.moments ? fmtMoment(analysis.moments.variance) : '—'} />
             </div>
             <p className="text-xs text-slate-500">
-              Histogram drawn from {n.toLocaleString()} samples (Web Worker, seed {seed}). The amber
-              curve is the analytic density evaluated by the same TypeScript engine
-              {analysis.caps?.can_log_prob ? '.' : ' — unavailable for this RV, so only the histogram is shown.'}
+              Histogram drawn from {n.toLocaleString()} samples in a Web Worker (seed {seed}) by the{' '}
+              <span className="text-slate-300">{engine === 'wasm' ? 'Rust core (WebAssembly)' : 'TypeScript engine'}</span>.
+              The amber curve is the analytic density from the TypeScript engine
+              {analysis.caps?.can_log_prob ? ' — switch engines and the histogram is unchanged.' : ' — unavailable for this RV, so only the histogram is shown.'}
             </p>
           </>
         )}

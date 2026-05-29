@@ -4,6 +4,8 @@
 import { useEffect, useRef, useState } from 'react'
 // Services
 import { SamplerClient } from '@/lib/worker-client'
+// Types
+import type { Engine } from '@/types/rv-form'
 
 export interface SamplerState {
   samples: Float64Array | null
@@ -20,7 +22,7 @@ const INITIAL: SamplerState = { samples: null, mean: 0, variance: 0, loading: tr
  * seed change. Superseded requests are ignored via a monotonic token so only the latest result is
  * applied (no flicker / race).
  */
-export function useSampler(doc: unknown, n: number, seed: number, debounceMs = 150): SamplerState {
+export function useSampler(doc: unknown, n: number, seed: number, engine: Engine, debounceMs = 150): SamplerState {
   const clientRef = useRef<SamplerClient | null>(null)
   const docRef = useRef(doc)
   docRef.current = doc
@@ -40,7 +42,7 @@ export function useSampler(doc: unknown, n: number, seed: number, debounceMs = 1
     setState((s) => ({ ...s, loading: true, error: null }))
     const handle = setTimeout(() => {
       client
-        .sample(docRef.current, n, seed)
+        .sample(docRef.current, n, seed, engine)
         .then((r) => {
           if (token !== tokenRef.current) return
           setState({ samples: r.samples ?? null, mean: r.mean ?? 0, variance: r.variance ?? 0, loading: false, error: null })
@@ -52,7 +54,7 @@ export function useSampler(doc: unknown, n: number, seed: number, debounceMs = 1
     }, debounceMs)
     return () => clearTimeout(handle)
     // `key` captures every meaningful change in `doc`; docRef supplies the latest value.
-  }, [key, n, seed, debounceMs])
+  }, [key, n, seed, engine, debounceMs])
 
   return state
 }

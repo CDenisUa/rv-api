@@ -23,12 +23,16 @@ export interface BuilderState {
   componentB: LeafForm
 }
 
+/** Which engine the worker should sample with: the TypeScript reference or the Rust core (WASM). */
+export type Engine = 'ts' | 'wasm'
+
 /** A worker request to draw samples from a document. */
 export interface SampleRequest {
   id: number
   doc: unknown
   n: number
   seed: number
+  engine: Engine
 }
 
 /** A worker response carrying the drawn samples (transferred buffer) and their summary stats. */

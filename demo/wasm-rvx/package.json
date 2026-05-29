@@ -1,0 +1,19 @@
+{
+  "name": "rvx",
+  "type": "module",
+  "description": "Reference Rust implementation of the RV Exchange Format v1 (systems / WASM core).",
+  "version": "1.0.0",
+  "license": "MIT",
+  "files": [
+    "rvx_bg.wasm",
+    "rvx.js",
+    "rvx_bg.js",
+    "rvx.d.ts"
+  ],
+  "main": "rvx.js",
+  "types": "rvx.d.ts",
+  "sideEffects": [
+    "./rvx.js",
+    "./snippets/*"
+  ]
+}
