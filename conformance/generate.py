@@ -37,6 +37,12 @@ SAMPLING = {"seed": 12345, "n": 200000, "ks_stat_max": 0.02, "mean_atol": 0.05, 
 SAMPLING_EMPIRICAL = {"seed": 12345, "n": 200000, "ks_stat_max": 0.05, "mean_atol": 0.1, "var_rtol": 0.1}
 SAMPLING_NO_KS = {"seed": 12345, "n": 200000, "ks_stat_max": None, "mean_atol": 0.05, "var_rtol": 0.05}
 
+# A sampling check must pass for *any* conforming RNG stream, not just numpy's. The sample mean has
+# standard error sqrt(Var/n); an absolute tolerance below that is only satisfiable by luck (e.g.
+# Weibull scale=350 has SEM ~0.09, larger than 0.05). So the per-case mean tolerance is widened to a
+# fixed multiple of the distribution's own SEM — a true 6-sigma band — keeping it language-neutral.
+SEM_SIGMAS = 6.0
+
 
 def leaf(dist, params):
     return {"kind": "leaf", "dist": dist, "params": params}
@@ -108,7 +114,7 @@ def build(name, rv_struct, points, sampling):
 
     golden = {"case": name, "format_version": VERSION, "kind": rv_struct["kind"],
               "capabilities": caps.as_dict(),
-              "log_prob": None, "cdf": None, "moments": None, "sampling": sampling}
+              "log_prob": None, "cdf": None, "moments": None, "sampling": dict(sampling)}
     if caps.can_log_prob and points:
         golden["log_prob"] = [{"x": x, "value": float(rvx.log_prob(node, x))} for x in points]
     if caps.can_cdf and points:
@@ -116,11 +122,25 @@ def build(name, rv_struct, points, sampling):
     try:
         m, v = rvx.moments(node)
         golden["moments"] = {"mean": _num(m), "variance": _num(v)}
+        golden["sampling"]["mean_atol"] = _mean_atol(sampling["mean_atol"], v, sampling["n"])
     except MomentsNotAvailable:
-        pass
+        # No closed-form variance to size the band; widen via a Monte-Carlo variance estimate so the
+        # check is still robust across RNG streams (transform/exp etc.).
+        xs = rvx.sample(node, np.random.default_rng(sampling["seed"]), sampling["n"])
+        if np.ndim(xs) == 1:
+            golden["sampling"]["mean_atol"] = _mean_atol(
+                sampling["mean_atol"], float(np.var(xs)), sampling["n"])
 
     doc = {"format_version": VERSION, "metadata": {"name": name}, "rv": rv_struct}
     return doc, golden
+
+
+def _mean_atol(base, variance, n):
+    """Sample-mean tolerance = max(base, SEM_SIGMAS·sqrt(Var/n)). Per-dimension variance (Joint) is
+    not mean-checked by the runners, so a scalar variance is used when available."""
+    if isinstance(variance, list):
+        variance = max(variance)
+    return max(base, SEM_SIGMAS * (variance / n) ** 0.5)
 
 
 def _num(x):

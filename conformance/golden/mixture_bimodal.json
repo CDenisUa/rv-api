@@ -57,7 +57,7 @@
   },
   "sampling": {
     "ks_stat_max": 0.02,
-    "mean_atol": 0.05,
+    "mean_atol": 0.07602592615061501,
     "n": 200000,
     "seed": 12345,
     "var_rtol": 0.05
