@@ -171,7 +171,10 @@ catalog and §8 for how each op affects `log_prob` (change-of-variables) and cap
 
 A Leaf MAY declare `support = { lower?, upper?, lower_inclusive?, upper_inclusive? }`. Omitted bounds
 mean ±∞. If declared, it MUST be consistent with the distribution's natural support (§5.1); declaring
-a support that contradicts the distribution is an error.
+a support that contradicts the distribution is an error. In v1, declared support is allowed to be a
+stricter valid evaluation domain (for example a finite plotting or application range), but it MUST
+NOT extend outside the distribution's natural support. It does not redefine or truncate the
+underlying distribution.
 
 ### 6.2 Validation pipeline (two stages)
 
@@ -245,16 +248,28 @@ Sampling always works: draw `x` from base, return `g(x)`.
 bandwidth `h = n^(−1/(d+4))·σ̂` (d = 1 here), `σ̂` the sample std-dev. This makes empirical log-prob
 deterministic and reproducible. Sampling uses inverse-CDF on the empirical quantiles (bootstrap).
 
+A `bulk_ref` carries the sample array in one of two transports: **inline `base64`** (a little-endian
+raw buffer) or an external **`.npy` sidecar** referenced by `path`. The inline `base64` transport is
+the **mandatory baseline** - every conforming consumer MUST decode it. The `.npy` sidecar is
+**OPTIONAL**: a consumer MAY support it, and one that does not MUST reject an `npy` `bulk_ref` with an
+explicit error rather than misread it. (The Python reference reads both; the TypeScript and Rust
+references implement the mandatory `base64` baseline and reject `npy`.)
+
 ### 8.6 Complexity (Big-O)
 
 | Kind                | `sample`                                   | `log_prob`                         |
 |---------------------|--------------------------------------------|------------------------------------|
 | Leaf analytic       | O(1)                                       | O(1)                               |
-| Leaf categorical    | O(1) (alias) after O(k) build              | O(1)                               |
+| Leaf categorical    | O(1) (alias) after O(k) build              | O(k) (tolerance match over k cats) |
 | Leaf empirical (n)  | O(1) draw (alias) / O(log n) inv-CDF       | O(n) per query (KDE)               |
 | Joint (d dims)      | O(d) + children                            | O(d) + children                    |
-| Mixture (k comps)   | O(1) component (alias) + chosen child      | O(k) + children (logsumexp)        |
+| Mixture (k comps)   | O(n + k) for n draws (bucket) + children   | O(k) + children (logsumexp)        |
 | Transform           | O(child)                                   | O(child) + O(1) Jacobian           |
+
+Categorical `log_prob` matches the query against `k` category values within a numeric tolerance
+(§5.1), so it is O(k) rather than O(1) - a hash lookup would require exact float equality and is
+therefore not used. Mixture `sample` buckets the `n` component assignments in a single pass before
+sampling each child once, so drawing `n` values is O(n + k) (plus child cost), not O(n·k).
 
 ---
 

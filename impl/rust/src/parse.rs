@@ -4,7 +4,7 @@
 //! then builds the model and runs the semantic stage: weight/alignment rules, parameter sanity (via
 //! distribution construction), and capability re-validation - declared MUST equal recomputed.
 
-use crate::distributions::create;
+use crate::distributions::{create, Distribution};
 use crate::errors::{Result, RvError};
 use crate::model::{Capabilities, RvNode, Support};
 use crate::operations::capabilities;
@@ -15,9 +15,12 @@ use std::collections::HashMap;
 
 const WEIGHT_TOL: f64 = 1e-9;
 
+/// Highest format MAJOR this implementation understands. A document whose MAJOR exceeds this MUST be
+/// rejected rather than silently misinterpreted (SPEC.md §9).
+pub const SUPPORTED_FORMAT_MAJOR: u64 = 1;
+
 #[derive(Deserialize)]
 struct RawDocument {
-    #[allow(dead_code)]
     format_version: String,
     rv: RawNode,
 }
@@ -86,9 +89,25 @@ pub fn parse_value(doc: &Value) -> Result<RvNode> {
 }
 
 fn finish(doc: RawDocument) -> Result<RvNode> {
+    check_format_version(&doc.format_version)?;
     let node = build(doc.rv)?;
     validate_semantics(&node)?;
     Ok(node)
+}
+
+/// Reject a document whose format MAJOR exceeds what we implement (SPEC.md §9).
+fn check_format_version(version: &str) -> Result<()> {
+    let major: u64 = version
+        .split('.')
+        .next()
+        .and_then(|s| s.parse().ok())
+        .ok_or_else(|| RvError::Validation(format!("malformed format_version: {version:?}")))?;
+    if major > SUPPORTED_FORMAT_MAJOR {
+        return Err(RvError::Validation(format!(
+            "unsupported format_version {version}: MAJOR {major} exceeds supported {SUPPORTED_FORMAT_MAJOR}"
+        )));
+    }
+    Ok(())
 }
 
 fn build(raw: RawNode) -> Result<RvNode> {
@@ -128,9 +147,9 @@ fn build_support(rs: RawSupport) -> Support {
 /// Recursively enforce semantic invariants and capability consistency (SPEC.md §6.2).
 pub fn validate_semantics(node: &RvNode) -> Result<()> {
     match node {
-        RvNode::Leaf { dist, params, .. } => {
+        RvNode::Leaf { dist, params, support, .. } => {
             // Constructing the distribution validates parameters (and, for empirical, the bulk_ref).
-            create(dist, params)?;
+            let d = create(dist, params)?;
             if dist == "categorical" {
                 let probs = f64_array(params, "probs")?;
                 let categories = f64_array(params, "categories")?;
@@ -138,6 +157,9 @@ pub fn validate_semantics(node: &RvNode) -> Result<()> {
                 if categories.len() != probs.len() {
                     return Err(RvError::Validation("categorical categories/probs length mismatch".into()));
                 }
+            }
+            if let Some(s) = support {
+                check_support_consistency(s, d.as_ref())?;
             }
         }
         RvNode::Joint { dims, .. } => {
@@ -211,6 +233,34 @@ fn support_value(s: &Support) -> Value {
         obj["upper"] = json!(u);
     }
     obj
+}
+
+/// A declared support MUST NOT extend beyond the distribution's natural support (SPEC.md §6.1).
+fn check_support_consistency(support: &Support, dist: &dyn Distribution) -> Result<()> {
+    let (nat_lower, nat_upper) = dist.support();
+    if let Some(lower) = support.lower {
+        if lower < nat_lower - bound_tol(nat_lower) {
+            return Err(RvError::Validation(format!(
+                "declared support lower {lower} is below the distribution's natural lower bound {nat_lower}"
+            )));
+        }
+    }
+    if let Some(upper) = support.upper {
+        if upper > nat_upper + bound_tol(nat_upper) {
+            return Err(RvError::Validation(format!(
+                "declared support upper {upper} is above the distribution's natural upper bound {nat_upper}"
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn bound_tol(bound: f64) -> f64 {
+    if bound.is_finite() {
+        1e-9 * (1.0 + bound.abs())
+    } else {
+        0.0
+    }
 }
 
 fn check_weights(weights: &[f64], label: &str) -> Result<()> {

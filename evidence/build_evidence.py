@@ -20,9 +20,14 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOL = 1e-9
 
+# Use the tsx pinned in impl/typescript/devDependencies (installed by `npm ci`) rather than `npx
+# tsx`, which would fetch an unpinned version from the network - keeping the evidence pack
+# reproducible and offline.
+TSX = os.path.join(ROOT, "impl", "typescript", "node_modules", ".bin", "tsx")
+
 REPORTERS = [
     ("Python", [sys.executable, "evidence/report.py"], ROOT),
-    ("TypeScript", ["npx", "tsx", "evidence/report.ts"], ROOT),
+    ("TypeScript", [TSX, "evidence/report.ts"], ROOT),
     ("Rust", ["cargo", "run", "--release", "--quiet", "--example", "report"], os.path.join(ROOT, "impl", "rust")),
 ]
 
@@ -84,10 +89,10 @@ BIG_O = """\
 | kind | sample | log_prob |
 |---|---|---|
 | Leaf analytic | O(1) | O(1) |
-| Leaf categorical (k) | O(1) draw after O(k) build | O(1) |
+| Leaf categorical (k) | O(1) draw after O(k) build | O(k) (tolerance match over k cats) |
 | Leaf empirical (n) | O(1) draw | O(n) per query (KDE) |
 | Joint (d dims) | O(d) + children | O(d) + children |
-| Mixture (k comps) | O(1) component (alias) + child | O(k) + children (logsumexp) |
+| Mixture (k comps) | O(n + k) for n draws (bucket) + child | O(k) + children (logsumexp) |
 | Transform | O(child) | O(child) + O(1) Jacobian |"""
 
 

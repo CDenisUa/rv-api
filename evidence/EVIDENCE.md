@@ -56,9 +56,9 @@ TypeScript and Rust evaluate scalars in tight loops), so read those rows per-lan
 
 | metric | Python | TypeScript | Rust |
 |---|---|---|---|
-| sample (ns / draw) | 21.2 | 31.4 | 8.8 |
-| normal log_prob (ns / call) | 93.7 | 58.5 | 10.6 |
-| gamma cdf (ns / call) | 47.4 | 119.7 | 41.3 |
+| sample (ns / draw) | 17.3 | 30.1 | 22.5 |
+| normal log_prob (ns / call) | 18.5 | 61.2 | 12.6 |
+| gamma cdf (ns / call) | 51.7 | 122.0 | 41.1 |
 
 The Rust core also compiles to `wasm32-unknown-unknown` (~337 KB), so the same verified engine runs
 natively, in Node, and in the browser (the demo samples in a Web Worker).
@@ -68,10 +68,10 @@ natively, in Node, and in the browser (the demo samples in a Web Worker).
 | kind | sample | log_prob |
 |---|---|---|
 | Leaf analytic | O(1) | O(1) |
-| Leaf categorical (k) | O(1) draw after O(k) build | O(1) |
+| Leaf categorical (k) | O(1) draw after O(k) build | O(k) (tolerance match over k cats) |
 | Leaf empirical (n) | O(1) draw | O(n) per query (KDE) |
 | Joint (d dims) | O(d) + children | O(d) + children |
-| Mixture (k comps) | O(1) component (alias) + child | O(k) + children (logsumexp) |
+| Mixture (k comps) | O(n + k) for n draws (bucket) + child | O(k) + children (logsumexp) |
 | Transform | O(child) | O(child) + O(1) Jacobian |
 
 The structure/bulk split (empirical samples in a base64/`.npy` sidecar) keeps structural parse time

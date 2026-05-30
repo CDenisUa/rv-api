@@ -34,6 +34,14 @@ demo/          # Next.js dashboard: build an RV, sample it live, see Python == T
 evidence/      # EVIDENCE.md - generated cross-language conformance matrix, timings, Big-O
 ```
 
+## Implementation notes
+
+- **Empirical `bulk_ref` transport** - all three references decode the mandatory inline `base64`
+  transport. The `.npy` sidecar is an optional transport (SPEC §8.5): the Python reference reads it;
+  the TypeScript and Rust references reject `npy` with an explicit error rather than misread it.
+- **Format version** - each reference rejects a document whose `format_version` MAJOR exceeds the
+  version it implements (SPEC §9), so a future breaking revision can never be silently misinterpreted.
+
 ## Status
 
 All milestones complete and green:
@@ -43,20 +51,78 @@ All milestones complete and green:
 - The same `.rv.json` reproduces to the same numbers in all three languages within **1e-9** - see
   [`evidence/EVIDENCE.md`](evidence/EVIDENCE.md).
 
-## Quick start
+## Getting started
+
+All commands are run from the repository root unless noted.
+
+### Prerequisites
+
+| Tool | Version | Used for |
+|------|---------|----------|
+| Python | 3.10+ (3.12 in CI) | reference impl + golden generation |
+| Node.js | 20+ | TypeScript engine (`npm`) and demo (`pnpm`) |
+| Rust | stable | systems core; add the `wasm32-unknown-unknown` target for the WASM build |
+
+Python packages: `numpy scipy` (runtime) plus `pytest hypothesis jsonschema` (tests).
+
+### Run the reference implementations (tests)
+
+Each conformance suite asserts agreement with the shared golden within **1e-9**.
 
 ```bash
-# Conformance suites (each asserts agreement with golden @1e-9):
-cd impl/python     && PYTHONPATH=src python3 -m pytest      # 102 passed
-cd impl/typescript && npm install && npm test               # 109 passed
-cd impl/rust       && cargo test                            # conformance + property tests
+# Python - scipy adapter; also produces the golden
+cd impl/python
+pip install numpy scipy pytest hypothesis jsonschema
+PYTHONPATH=src python3 -m pytest                 # 108 passed, 5 skipped
 
-# Cross-language evidence pack:
-PYTHONPATH=impl/python/src python3 evidence/build_evidence.py
+# TypeScript
+cd impl/typescript
+npm install
+npm test                                         # 114 passed
+npm run typecheck
 
-# Demo dashboard (uses pnpm):
-cd demo && pnpm install && pnpm run dev                      # http://localhost:3000
+# Rust - conformance + property tests
+cd impl/rust
+cargo test
 ```
+
+### Build the Rust engine to WebAssembly (optional)
+
+```bash
+rustup target add wasm32-unknown-unknown
+cd impl/rust
+cargo build --release --target wasm32-unknown-unknown --features wasm
+```
+
+### Run the demo app
+
+The dashboard lives in `demo/` and uses the TypeScript `rvx` package through a local
+`file:../impl/typescript` dependency. It needs **pnpm** - if it is not available, enable it with
+Corepack first:
+
+```bash
+corepack enable
+corepack prepare pnpm@10 --activate
+```
+
+```bash
+cd demo
+pnpm install
+pnpm run dev                                     # http://localhost:3000
+```
+
+The page reads the shared `conformance/` fixtures at render time and samples with either the
+TypeScript engine or the committed Rust WebAssembly build, so no separate Python or Rust process is
+needed to use the app. For a production check: `pnpm run typecheck && pnpm run build && pnpm run start`.
+
+### Regenerate the cross-language evidence pack
+
+```bash
+PYTHONPATH=impl/python/src python3 evidence/build_evidence.py
+```
+
+Each implementation independently re-derives every conformance value and the script asserts they
+agree within 1e-9, then writes [`evidence/EVIDENCE.md`](evidence/EVIDENCE.md).
 
 ## Design principles
 

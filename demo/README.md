@@ -3,17 +3,58 @@
 The demo dashboard for the RV Exchange Format: build a random variable in the browser, watch it
 sampled live, and see the **same `.rv.json` evaluated identically by Python, TypeScript, and Rust**.
 
+## Run locally
+
+Prerequisites: Node.js 20+ and pnpm. If pnpm is not installed, use Corepack:
+
 ```bash
-pnpm install
-pnpm run dev        # http://localhost:3000
-pnpm run build      # production build
+corepack enable
+corepack prepare pnpm@10 --activate
 ```
 
-> Uses **pnpm**. `package.json` marks `sharp` as an allowed build dependency
-> (`pnpm.onlyBuiltDependencies`) so install isn't blocked by pnpm's ignored-builds guard.
+From the repository root:
+
+```bash
+cd demo
+pnpm install
+pnpm run dev
+```
+
+Open http://localhost:3000.
+
+For a production build and local production server:
+
+```bash
+cd demo
+pnpm run typecheck
+pnpm run build
+pnpm run start
+```
+
+`pnpm run start` serves the build at http://localhost:3000 and requires `pnpm run build` first.
+
+> Uses **pnpm**. `pnpm-workspace.yaml` allows the optional `sharp` build dependency, so install
+> isn't blocked by pnpm's ignored-builds guard.
 
 > Requires the sibling `impl/typescript` package (linked via `file:../impl/typescript`) and the
 > `conformance/` directory at the repo root (read at render time for the evidence panel).
+
+You do not need to start Python or Rust services to run the UI. The browser demo uses the local
+TypeScript package directly and the committed `wasm-rvx/` bundle for the Rust engine. Regenerate the
+WASM bundle only after changing `impl/rust`.
+
+## Useful commands
+
+```bash
+pnpm run dev        # Next.js dev server
+pnpm run typecheck  # TypeScript check
+pnpm run build      # production build
+pnpm run start      # serve the production build
+```
+
+If the app cannot resolve `rvx`, reinstall from inside `demo/` so pnpm recreates the local
+`file:../impl/typescript` link. If the conformance panel cannot load data, run the app from this
+repository layout; the server component expects `../conformance` relative to `demo/`.
 
 ## What it shows
 

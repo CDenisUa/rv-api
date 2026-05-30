@@ -121,13 +121,18 @@ class SampleVisitor(RVVisitor):
         return np.stack([dim.accept(self) for dim in node.dims], axis=1)
 
     def mixture(self, node: Mixture) -> np.ndarray:
+        # Bucket draw positions by component in one O(n) pass, then sample each component once and
+        # scatter back - avoids the O(n*k) "scan the full mask per component" pattern.
         idx = AliasSampler(node.weights).sample(self.rng, self.n)
+        buckets = [[] for _ in node.components]
+        for pos, comp_idx in enumerate(idx):
+            buckets[int(comp_idx)].append(pos)
+
         out = np.empty(self.n)
-        for i, comp in enumerate(node.components):
-            mask = idx == i
-            count = int(mask.sum())
+        for comp, positions in zip(node.components, buckets):
+            count = len(positions)
             if count:
-                out[mask] = comp.accept(SampleVisitor(self.rng, count))
+                out[np.asarray(positions, dtype=np.intp)] = comp.accept(SampleVisitor(self.rng, count))
         return out
 
     def transform(self, node: Transform) -> np.ndarray:

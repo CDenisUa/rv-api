@@ -10,7 +10,7 @@
 import { z } from 'zod'
 // Services
 import { capabilities } from './operations'
-import { createDistribution } from './distributions'
+import { createDistribution, type Distribution } from './distributions'
 import { zDocument, type RawNode } from './schema'
 // Types
 import {
@@ -29,6 +29,12 @@ import { CapabilityMismatch, ValidationError } from './errors'
 
 const WEIGHT_TOL = 1e-9
 
+/**
+ * Highest format MAJOR this implementation understands. A document whose MAJOR exceeds this MUST be
+ * rejected rather than silently misinterpreted (SPEC.md §9).
+ */
+export const SUPPORTED_FORMAT_MAJOR = 1
+
 export interface ParseOptions {
   /** Run semantic validation (weights, capability match) after structural parse. Default true. */
   validate?: boolean
@@ -41,9 +47,23 @@ export function parseDocument(doc: unknown, options: ParseOptions = {}): RVNode 
   if (!parsed.success) {
     throw new ValidationError(`document failed structural validation: ${formatZod(parsed.error)}`)
   }
+  checkFormatVersion(parsed.data.format_version)
   const node = parseNode(parsed.data.rv)
   if (validate) validateSemantics(node)
   return node
+}
+
+/** Reject a document whose format MAJOR exceeds what we implement (SPEC.md §9). */
+export function checkFormatVersion(version: string): void {
+  const major = Number(version.split('.', 1)[0])
+  if (!Number.isInteger(major)) {
+    throw new ValidationError(`malformed format_version: ${JSON.stringify(version)}`)
+  }
+  if (major > SUPPORTED_FORMAT_MAJOR) {
+    throw new ValidationError(
+      `unsupported format_version ${version}: MAJOR ${major} exceeds supported ${SUPPORTED_FORMAT_MAJOR}`,
+    )
+  }
 }
 
 /** Convert a structurally-valid raw node into the rich model (builds Strategy ops, etc.). */
@@ -94,7 +114,7 @@ export function validateSemantics(node: RVNode): void {
   switch (node.kind) {
     case 'leaf': {
       // Constructing the distribution validates parameters (and, for empirical, the bulk_ref).
-      createDistribution(node.dist, node.params)
+      const dist = createDistribution(node.dist, node.params)
       if (node.dist === 'categorical') {
         const probs = node.params['probs'] as number[]
         const categories = node.params['categories'] as number[]
@@ -103,6 +123,7 @@ export function validateSemantics(node: RVNode): void {
           throw new ValidationError('categorical categories/probs length mismatch')
         }
       }
+      if (node.support) checkSupportConsistency(node.support, dist)
       break
     }
     case 'joint':
@@ -183,6 +204,25 @@ function supportDict(s: Support): Record<string, unknown> {
   if (s.lower !== undefined) out['lower'] = s.lower
   if (s.upper !== undefined) out['upper'] = s.upper
   return out
+}
+
+/** A declared support MUST NOT extend beyond the distribution's natural support (SPEC.md §6.1). */
+function checkSupportConsistency(support: Support, dist: Distribution): void {
+  const [natLower, natUpper] = dist.support()
+  if (support.lower !== undefined && support.lower < natLower - boundTol(natLower)) {
+    throw new ValidationError(
+      `declared support lower ${support.lower} is below the distribution's natural lower bound ${natLower}`,
+    )
+  }
+  if (support.upper !== undefined && support.upper > natUpper + boundTol(natUpper)) {
+    throw new ValidationError(
+      `declared support upper ${support.upper} is above the distribution's natural upper bound ${natUpper}`,
+    )
+  }
+}
+
+function boundTol(bound: number): number {
+  return Number.isFinite(bound) ? 1e-9 * (1 + Math.abs(bound)) : 0
 }
 
 function checkWeights(weights: readonly number[], label: string): void {

@@ -38,6 +38,10 @@ class Distribution(ABC):
     def capabilities(self) -> Capabilities:
         return Capabilities.all()
 
+    def support(self) -> Tuple[float, float]:
+        """Natural support as (lower, upper); ±inf when unbounded (SPEC.md §5.1, §6.1)."""
+        return (-math.inf, math.inf)
+
 
 class _Scipy(Distribution):
     """Adapter over a frozen scipy.stats distribution (analytic leaves)."""
@@ -57,6 +61,10 @@ class _Scipy(Distribution):
     def moments(self):
         m, v = self._d.stats(moments="mv")
         return float(m), float(v)
+
+    def support(self):
+        lo, hi = self._d.support()
+        return float(lo), float(hi)
 
 
 class Categorical(Distribution):
@@ -87,6 +95,9 @@ class Categorical(Distribution):
         mean = float(np.sum(self._cats * self._probs))
         var = float(np.sum(self._probs * (self._cats - mean) ** 2))
         return mean, var
+
+    def support(self):
+        return float(self._cats.min()), float(self._cats.max())
 
 
 class Empirical(Distribution):

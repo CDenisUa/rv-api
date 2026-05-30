@@ -26,6 +26,8 @@ export interface Distribution {
   sample(rng: RNG, n: number): Float64Array
   moments(): [number, number]
   capabilities(): Capabilities
+  /** Natural support as [lower, upper]; ±Infinity when unbounded (SPEC.md §5.1, §6.1). */
+  support(): [number, number]
 }
 
 abstract class BaseDistribution implements Distribution {
@@ -35,6 +37,9 @@ abstract class BaseDistribution implements Distribution {
   abstract moments(): [number, number]
   capabilities(): Capabilities {
     return allCapabilities()
+  }
+  support(): [number, number] {
+    return [-Infinity, Infinity]
   }
 }
 
@@ -89,6 +94,9 @@ class LogNormal extends BaseDistribution {
     const variance = (Math.exp(s2) - 1) * Math.exp(2 * this.mu + s2)
     return [mean, variance]
   }
+  override support(): [number, number] {
+    return [0, Infinity]
+  }
 }
 
 class Weibull extends BaseDistribution {
@@ -124,6 +132,9 @@ class Weibull extends BaseDistribution {
     const variance = this.scale * this.scale * (g2 - g1 * g1)
     return [mean, variance]
   }
+  override support(): [number, number] {
+    return [0, Infinity]
+  }
 }
 
 class Uniform extends BaseDistribution {
@@ -151,6 +162,9 @@ class Uniform extends BaseDistribution {
   moments(): [number, number] {
     return [(this.low + this.high) / 2, (this.width * this.width) / 12]
   }
+  override support(): [number, number] {
+    return [this.low, this.high]
+  }
 }
 
 class Exponential extends BaseDistribution {
@@ -170,6 +184,9 @@ class Exponential extends BaseDistribution {
   }
   moments(): [number, number] {
     return [1 / this.rate, 1 / (this.rate * this.rate)]
+  }
+  override support(): [number, number] {
+    return [0, Infinity]
   }
 }
 
@@ -197,6 +214,9 @@ class Gamma extends BaseDistribution {
   }
   moments(): [number, number] {
     return [this.shape * this.scale, this.shape * this.scale * this.scale]
+  }
+  override support(): [number, number] {
+    return [0, Infinity]
   }
 }
 
@@ -230,6 +250,9 @@ class Beta extends BaseDistribution {
     const mean = this.alpha / s
     const variance = (this.alpha * this.beta) / (s * s * (s + 1))
     return [mean, variance]
+  }
+  override support(): [number, number] {
+    return [0, 1]
   }
 }
 
@@ -281,6 +304,9 @@ class Categorical extends BaseDistribution {
       variance += this.probs[i]! * d * d
     }
     return [mean, variance]
+  }
+  override support(): [number, number] {
+    return [Math.min(...this.categories), Math.max(...this.categories)]
   }
 }
 

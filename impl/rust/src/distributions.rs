@@ -24,6 +24,10 @@ pub trait Distribution {
     fn capabilities(&self) -> Capabilities {
         Capabilities::ALL
     }
+    /// Natural support as (lower, upper); ±inf when unbounded (SPEC.md §5.1, §6.1).
+    fn support(&self) -> (f64, f64) {
+        (f64::NEG_INFINITY, f64::INFINITY)
+    }
 }
 
 struct Normal {
@@ -74,6 +78,9 @@ impl Distribution for LogNormal {
         let var = (s2.exp() - 1.0) * (2.0 * self.mu + s2).exp();
         (mean, var)
     }
+    fn support(&self) -> (f64, f64) {
+        (0.0, f64::INFINITY)
+    }
 }
 
 struct Weibull {
@@ -114,6 +121,9 @@ impl Distribution for Weibull {
         let g2 = lgamma(1.0 + 2.0 / self.shape).exp();
         (self.scale * g1, self.scale * self.scale * (g2 - g1 * g1))
     }
+    fn support(&self) -> (f64, f64) {
+        (0.0, f64::INFINITY)
+    }
 }
 
 struct Uniform {
@@ -144,6 +154,9 @@ impl Distribution for Uniform {
         let w = self.high - self.low;
         ((self.low + self.high) / 2.0, w * w / 12.0)
     }
+    fn support(&self) -> (f64, f64) {
+        (self.low, self.high)
+    }
 }
 
 struct Exponential {
@@ -169,6 +182,9 @@ impl Distribution for Exponential {
     }
     fn moments(&self) -> (f64, f64) {
         (1.0 / self.rate, 1.0 / (self.rate * self.rate))
+    }
+    fn support(&self) -> (f64, f64) {
+        (0.0, f64::INFINITY)
     }
 }
 
@@ -206,6 +222,9 @@ impl Distribution for Gamma {
     fn moments(&self) -> (f64, f64) {
         (self.shape * self.scale, self.shape * self.scale * self.scale)
     }
+    fn support(&self) -> (f64, f64) {
+        (0.0, f64::INFINITY)
+    }
 }
 
 struct Beta {
@@ -241,6 +260,9 @@ impl Distribution for Beta {
     fn moments(&self) -> (f64, f64) {
         let s = self.alpha + self.beta;
         (self.alpha / s, self.alpha * self.beta / (s * s * (s + 1.0)))
+    }
+    fn support(&self) -> (f64, f64) {
+        (0.0, 1.0)
     }
 }
 
@@ -298,6 +320,11 @@ impl Distribution for Categorical {
             .map(|(c, p)| p * (c - mean) * (c - mean))
             .sum();
         (mean, var)
+    }
+    fn support(&self) -> (f64, f64) {
+        let lower = self.categories.iter().cloned().fold(f64::INFINITY, f64::min);
+        let upper = self.categories.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+        (lower, upper)
     }
 }
 

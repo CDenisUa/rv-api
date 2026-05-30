@@ -20,14 +20,33 @@ from .errors import CapabilityMismatch, ValidationError
 
 WEIGHT_TOL = 1e-9
 
+#: Highest format MAJOR this implementation understands. A document whose MAJOR exceeds this MUST be
+#: rejected rather than silently misinterpreted (SPEC.md §9).
+SUPPORTED_FORMAT_MAJOR = 1
+
 
 def parse_document(doc: Mapping[str, Any], *, validate: bool = True) -> RVNode:
+    check_format_version(doc.get("format_version"))
     if "rv" not in doc:
         raise ValidationError("document is missing the 'rv' root node")
     node = parse_node(doc["rv"])
     if validate:
         validate_semantics(node)
     return node
+
+
+def check_format_version(version: Any) -> None:
+    """Reject a document whose format MAJOR exceeds what we implement (SPEC.md §9)."""
+    if not isinstance(version, str):
+        raise ValidationError("document is missing a string 'format_version'")
+    try:
+        major = int(version.split(".", 1)[0])
+    except ValueError:
+        raise ValidationError(f"malformed format_version: {version!r}")
+    if major > SUPPORTED_FORMAT_MAJOR:
+        raise ValidationError(
+            f"unsupported format_version {version}: MAJOR {major} exceeds supported "
+            f"{SUPPORTED_FORMAT_MAJOR}")
 
 
 def parse_node(d: Mapping[str, Any]) -> RVNode:
@@ -56,6 +75,8 @@ def validate_semantics(node: RVNode) -> None:
             _check_weights(node.params["probs"], "categorical probs")
             if len(node.params["categories"]) != len(node.params["probs"]):
                 raise ValidationError("categorical categories/probs length mismatch")
+        if node.support is not None:
+            _check_support_consistency(node.support, d)
     elif isinstance(node, Joint):
         for dim in node.dims:
             validate_semantics(dim)
@@ -123,6 +144,23 @@ def _support_dict(s: Support) -> dict:
     if s.upper is not None:
         out["upper"] = s.upper
     return out
+
+
+def _check_support_consistency(support: Support, dist) -> None:
+    """A declared support MUST NOT extend beyond the distribution's natural support (SPEC.md §6.1)."""
+    nat_lower, nat_upper = dist.support()
+    if support.lower is not None and support.lower < nat_lower - _bound_tol(nat_lower):
+        raise ValidationError(
+            f"declared support lower {support.lower} is below the distribution's natural lower "
+            f"bound {nat_lower}")
+    if support.upper is not None and support.upper > nat_upper + _bound_tol(nat_upper):
+        raise ValidationError(
+            f"declared support upper {support.upper} is above the distribution's natural upper "
+            f"bound {nat_upper}")
+
+
+def _bound_tol(bound: float) -> float:
+    return 1e-9 * (1.0 + abs(bound)) if math.isfinite(bound) else 0.0
 
 
 def _check_weights(weights, label: str) -> None:
