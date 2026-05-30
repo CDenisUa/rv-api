@@ -2,7 +2,7 @@
  * Document ↔ model conversion plus semantic validation (SPEC.md §6.2).
  *
  * Stage 1 (structural) is Zod (schema.ts). Stage 2 (semantic) lives here: weight/alignment rules,
- * parameter sanity (via distribution construction), and capability re-validation — the declared
+ * parameter sanity (via distribution construction), and capability re-validation - the declared
  * capabilities MUST equal the values recomputed from structure, or the document is rejected.
  */
 

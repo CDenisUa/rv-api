@@ -2,7 +2,7 @@
 //!
 //! Uses `sfc32` (a small fast counter-based generator of good statistical quality) seeded via
 //! `splitmix32`. RNG streams differ across languages by design, so the conformance suite checks
-//! sampling statistically (KS + moments), not byte-for-byte — this generator only needs to be
+//! sampling statistically (KS + moments), not byte-for-byte - this generator only needs to be
 //! correct in distribution.
 
 pub struct Rng {
@@ -61,7 +61,7 @@ impl Rng {
         (self.uniform() * k as f64) as usize
     }
 
-    /// Standard normal via Box–Muller (caches the second deviate).
+    /// Standard normal via Box-Muller (caches the second deviate).
     pub fn normal(&mut self) -> f64 {
         if let Some(v) = self.spare_normal.take() {
             return v;
@@ -82,7 +82,7 @@ impl Rng {
         -(1.0 - self.uniform()).ln()
     }
 
-    /// Standard gamma (scale 1) via Marsaglia–Tsang, with the U^(1/k) boost for shape < 1.
+    /// Standard gamma (scale 1) via Marsaglia-Tsang, with the U^(1/k) boost for shape < 1.
     pub fn standard_gamma(&mut self, shape: f64) -> f64 {
         if shape < 1.0 {
             let u = self.uniform();

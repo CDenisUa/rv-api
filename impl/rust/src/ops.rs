@@ -82,7 +82,7 @@ impl Op {
         }
     }
 
-    /// log |d/dy inverse(y)| — the change-of-variables Jacobian term.
+    /// log |d/dy inverse(y)| - the change-of-variables Jacobian term.
     pub fn log_abs_dinverse(&self, y: f64) -> Result<f64> {
         match self {
             Op::Affine { a, .. } => Ok(-a.abs().ln()),

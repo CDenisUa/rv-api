@@ -4,7 +4,7 @@
  * Deterministic outputs (log_prob, cdf, analytic moments) must match golden within 1e-9. Stochastic
  * sampling is checked statistically (KS against the case's own CDF + moment tolerances). Each case is
  * also validated against the canonical JSON Schema (spec/rv.schema.json) with ajv, independently of
- * the library's own Zod door — proving the fixtures and the contract agree.
+ * the library's own Zod door - proving the fixtures and the contract agree.
  */
 
 // Core

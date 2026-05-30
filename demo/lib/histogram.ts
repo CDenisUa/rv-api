@@ -12,7 +12,7 @@ export interface Range {
   max: number
 }
 
-/** Robust plotting range from samples: clip to the 0.5–99.5 percentiles to ignore extreme tails. */
+/** Robust plotting range from samples: clip to the 0.5-99.5 percentiles to ignore extreme tails. */
 export function sampleRange(samples: Float64Array | number[]): Range {
   if (samples.length === 0) return { min: 0, max: 1 }
   const sorted = Float64Array.from(samples).sort()

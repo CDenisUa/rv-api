@@ -1,7 +1,7 @@
 // Web Worker: draws samples off the main thread so the UI stays responsive even at large n (the
 // scalability angle). It can sample with either engine on the same `.rv.json`:
-//   - 'ts'   — the TypeScript reference (rvx), parsed + sampled here;
-//   - 'wasm' — the Rust core compiled to WebAssembly (wasm-pack), loaded lazily.
+//   - 'ts'   - the TypeScript reference (rvx), parsed + sampled here;
+//   - 'wasm' - the Rust core compiled to WebAssembly (wasm-pack), loaded lazily.
 // The sample buffer is transferred back with zero copy.
 
 /// <reference lib="webworker" />

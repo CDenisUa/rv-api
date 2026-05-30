@@ -43,9 +43,9 @@ export function ConformancePanel() {
               <tr key={c.name} className="text-slate-300">
                 <td className="py-2 pr-4 font-mono text-xs text-slate-200">{c.name}</td>
                 <td className="py-2 pr-4 text-slate-400">{c.kind}</td>
-                <td className="py-2 pr-4 tabular-nums">{c.comparisons || '—'}</td>
+                <td className="py-2 pr-4 tabular-nums">{c.comparisons || '-'}</td>
                 <td className="py-2 pr-4 tabular-nums text-slate-400">
-                  {c.comparisons === 0 ? '—' : c.maxAbsError === 0 ? '0' : c.maxAbsError.toExponential(1)}
+                  {c.comparisons === 0 ? '-' : c.maxAbsError === 0 ? '0' : c.maxAbsError.toExponential(1)}
                 </td>
                 <td className="py-2">
                   {c.comparisons === 0 ? (

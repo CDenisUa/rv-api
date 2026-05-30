@@ -1,8 +1,8 @@
-# RV Exchange Format — Specification v1
+# RV Exchange Format - Specification v1
 
 A portable, language-neutral format for serializing a **random variable** (RV) as a whole, so that
 one system can serialize it and another (possibly in a different language) can reconstruct it and
-operate on it. The format describes the **semantics** of an RV — what it *means* — not a
+operate on it. The format describes the **semantics** of an RV - what it *means* - not a
 library-specific class instance.
 
 - Machine-readable contract: [`rv.schema.json`](./rv.schema.json) (JSON Schema, draft 2020-12).
@@ -39,9 +39,9 @@ A document is a JSON object:
 }
 ```
 
-- `format_version` — semantic version (`MAJOR.MINOR.PATCH`) of this format. See §9.
-- `metadata` — optional, ignored by operations (free-form: name, units, provenance, comments).
-- `rv` — the single root RV node.
+- `format_version` - semantic version (`MAJOR.MINOR.PATCH`) of this format. See §9.
+- `metadata` - optional, ignored by operations (free-form: name, units, provenance, comments).
+- `rv` - the single root RV node.
 
 An **RV node** is a recursive tagged union discriminated by `kind`:
 
@@ -52,8 +52,8 @@ RV = Leaf | Joint | Mixture | Transform
 `Joint`, `Mixture`, and `Transform` contain child RV nodes, so a document is a **tree**.
 
 Every node MAY carry:
-- `capabilities` — declared `{ can_sample, can_log_prob, can_cdf }` (see §7).
-- `metadata` — free-form annotations.
+- `capabilities` - declared `{ can_sample, can_log_prob, can_cdf }` (see §7).
+- `metadata` - free-form annotations.
 
 Leaf nodes additionally MAY carry `support` (see §6.1).
 
@@ -74,18 +74,18 @@ declared capabilities MUST truthfully reflect which are mathematically valid for
 
 ## 4. Kinds
 
-### 4.1 Leaf — atomic distribution
+### 4.1 Leaf - atomic distribution
 
 ```json
 { "kind": "leaf", "dist": "normal", "params": { "mu": 0, "sigma": 1 } }
 ```
 
-- `dist` — one of the catalog names in §5.
-- `params` — parameters using the **canonical names** in §5 (library-independent; adapters map to/from
+- `dist` - one of the catalog names in §5.
+- `params` - parameters using the **canonical names** in §5 (library-independent; adapters map to/from
   scipy etc.).
-- `support` — optional; if omitted, the natural support of `dist` is assumed (§6.1).
+- `support` - optional; if omitted, the natural support of `dist` is assumed (§6.1).
 
-### 4.2 Joint — independent composition
+### 4.2 Joint - independent composition
 
 ```json
 { "kind": "joint", "dims": [ { "...RV": "" }, { "...RV": "" } ] }
@@ -96,7 +96,7 @@ the dimensions' densities, hence `log_prob` is the **sum** of the children's `lo
 
 > v1 models independence only. Dependence (copulas, general conditionals) is explicitly out of scope.
 
-### 4.3 Mixture — weighted combination
+### 4.3 Mixture - weighted combination
 
 ```json
 { "kind": "mixture", "weights": [0.7, 0.3], "components": [ {"...RV":""}, {"...RV":""} ] }
@@ -108,7 +108,7 @@ Semantic rules (enforced beyond JSON Schema):
 - `weights.length === components.length`.
 - every `weight ≥ 0` and `Σ weights == 1` within tolerance `1e-9` (§10).
 
-### 4.4 Transform — deterministic transformation
+### 4.4 Transform - deterministic transformation
 
 ```json
 { "kind": "transform", "base": { "...RV": "" }, "op": { "name": "exp" } }
@@ -156,10 +156,10 @@ catalog and §8 for how each op affects `log_prob` (change-of-variables) and cap
 | `op.name` | Meaning           | Params              | Invertible? | Effect on `log_prob`            |
 |-----------|-------------------|---------------------|-------------|----------------------------------|
 | `affine`  | `y = a·x + b`     | `a` (≠0), `b`       | yes         | change-of-variables, `−log|a|`   |
-| `exp`     | `y = e^x`         | —                   | yes         | `x = log y`, Jacobian `1/y`      |
-| `log`     | `y = ln x`        | —                   | yes (x>0)   | `x = e^y`, Jacobian `e^y`        |
+| `exp`     | `y = e^x`         | -                   | yes         | `x = log y`, Jacobian `1/y`      |
+| `log`     | `y = ln x`        | -                   | yes (x>0)   | `x = e^y`, Jacobian `e^y`        |
 | `pow`     | `y = x^p`         | `exponent` (p≠0)    | yes on monotone branch (e.g. x>0) | see §8 |
-| `abs`     | `y = |x|`         | —                   | **no**      | drops `can_log_prob`             |
+| `abs`     | `y = |x|`         | -                   | **no**      | drops `can_log_prob`             |
 
 `abs` is deliberately included as a non-invertible op to demonstrate honest capability degradation.
 
@@ -175,12 +175,12 @@ a support that contradicts the distribution is an error.
 
 ### 6.2 Validation pipeline (two stages)
 
-1. **Schema validation** — the document MUST validate against `rv.schema.json`.
-2. **Semantic validation** — additionally enforce, recursively:
+1. **Schema validation** - the document MUST validate against `rv.schema.json`.
+2. **Semantic validation** - additionally enforce, recursively:
    - Mixture/categorical weight & alignment rules (§4.3, §5.1).
-   - Parameter constraints (§5.1) — already largely encoded in schema, but re-checked.
+   - Parameter constraints (§5.1) - already largely encoded in schema, but re-checked.
    - Support consistency (§6.1).
-   - **Capability consistency** — recompute capabilities (§7) and reject if they contradict the
+   - **Capability consistency** - recompute capabilities (§7) and reject if they contradict the
      declared `capabilities`.
 
 A document that passes stage 1 but fails stage 2 is **invalid**.
@@ -197,11 +197,11 @@ A document that passes stage 1 but fails stage 2 is **invalid**.
   - `categorical`: `can_sample = can_log_prob = can_cdf = true` (cdf over ordered categories).
   - `empirical`: `can_sample = true`; `can_log_prob = true` (via KDE, §8.5); `can_cdf = true`
     (empirical CDF).
-- **Joint** — each capability is the **AND** over all `dims`. (`can_cdf` is the AND, interpreted
+- **Joint** - each capability is the **AND** over all `dims`. (`can_cdf` is the AND, interpreted
   per-dimension / product form.)
-- **Mixture** — `can_sample` = AND over components; `can_log_prob` = AND over components;
+- **Mixture** - `can_sample` = AND over components; `can_log_prob` = AND over components;
   `can_cdf` = AND over components.
-- **Transform** — `can_sample` = base.can_sample (always propagates: sample base, apply op).
+- **Transform** - `can_sample` = base.can_sample (always propagates: sample base, apply op).
   `can_log_prob` = base.can_log_prob **AND** `op` is invertible & differentiable (§5.3).
   `can_cdf` = base.can_cdf **AND** `op` is **monotonic** (so order is preserved).
 
@@ -214,18 +214,18 @@ from its children by these rules.
 
 All densities are evaluated in **log-space**.
 
-### 8.1 Leaf — closed forms
+### 8.1 Leaf - closed forms
 Standard log-pdf / log-pmf for each `dist` in §5.1.
 
-### 8.2 Joint — independence
+### 8.2 Joint - independence
 `log p(x₁,…,x_d) = Σ_i log p_i(x_i)`. Sampling: sample each dim independently.
 
-### 8.3 Mixture — log-sum-exp
+### 8.3 Mixture - log-sum-exp
 `log p(x) = logsumexp_i ( log(weights[i]) + log p_i(x) )`, where
 `logsumexp(a) = m + log Σ exp(aᵢ − m)`, `m = max(a)`. This avoids underflow/overflow.
 Sampling: choose component `i` via the **alias method** (O(1) per draw), then sample component `i`.
 
-### 8.4 Transform — change of variables
+### 8.4 Transform - change of variables
 For an invertible, differentiable `y = g(x)` with inverse `x = g⁻¹(y)`:
 
 `log p_Y(y) = log p_X(g⁻¹(y)) + log |d/dy g⁻¹(y)|`
@@ -240,7 +240,7 @@ For an invertible, differentiable `y = g(x)` with inverse `x = g⁻¹(y)`:
 
 Sampling always works: draw `x` from base, return `g(x)`.
 
-### 8.5 Empirical — KDE
+### 8.5 Empirical - KDE
 `log_prob` for `empirical` leaves uses **Gaussian kernel density estimation** with **Scott's-rule**
 bandwidth `h = n^(−1/(d+4))·σ̂` (d = 1 here), `σ̂` the sample std-dev. This makes empirical log-prob
 deterministic and reproducible. Sampling uses inverse-CDF on the empirical quantiles (bootstrap).
@@ -261,10 +261,10 @@ deterministic and reproducible. Sampling uses inverse-CDF on the empirical quant
 ## 9. Versioning
 
 - `format_version` is `MAJOR.MINOR.PATCH`.
-- **PATCH** — editorial/clarification, no structural change.
-- **MINOR** — backward-compatible additions (e.g. a new `dist` or `op`). Older consumers MAY reject
+- **PATCH** - editorial/clarification, no structural change.
+- **MINOR** - backward-compatible additions (e.g. a new `dist` or `op`). Older consumers MAY reject
   unknown names but MUST do so explicitly (no silent misinterpretation).
-- **MAJOR** — breaking change.
+- **MAJOR** - breaking change.
 - A consumer MUST reject a document whose MAJOR exceeds the version it implements.
 
 ---
@@ -294,7 +294,7 @@ custom code, inference state / posterior traces.
 
 ---
 
-## Appendix A — Worked examples
+## Appendix A - Worked examples
 
 ### A.1 Weibull fracture strength (materials)
 

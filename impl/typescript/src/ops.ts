@@ -22,7 +22,7 @@ export interface Op {
   readonly monotone: boolean
   forward(x: number): number
   inverse(y: number): number
-  /** log |d/dy inverse(y)| — the change-of-variables Jacobian term. */
+  /** log |d/dy inverse(y)| - the change-of-variables Jacobian term. */
   logAbsDInverse(y: number): number
   toJSON(): OpJSON
 }

@@ -2,7 +2,7 @@
 
 Each distribution is created by name from canonical, library-independent parameters and exposes a
 uniform interface (log_prob, cdf, sample, moments, capabilities). Adding a distribution = one
-`@register` — no existing code changes (Open/Closed).
+`@register` - no existing code changes (Open/Closed).
 
 The canonical parameterizations and their scipy mappings are defined in SPEC.md §5.
 """

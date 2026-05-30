@@ -157,7 +157,7 @@ class SampleVisitor implements RVVisitor<SampleResult> {
   }
   mixture(node: Mixture): SampleResult {
     // Bucket draw positions by component in one O(n) pass, then sample each component once and
-    // scatter back — O(n + k) rather than scanning all n per component.
+    // scatter back - O(n + k) rather than scanning all n per component.
     const idx = new AliasSampler(node.weights).sample(this.rng, this.n)
     const buckets: number[][] = node.components.map(() => [])
     for (let j = 0; j < this.n; j++) buckets[idx[j]!]!.push(j)

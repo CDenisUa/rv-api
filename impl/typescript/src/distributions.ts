@@ -3,7 +3,7 @@
  *
  * Each distribution is created by name from canonical, library-independent parameters (SPEC.md §5)
  * and exposes a uniform interface (logProb, cdf, sample, moments, capabilities). Adding a
- * distribution = one `register(...)` — no existing code changes (Open/Closed). The analytic leaves
+ * distribution = one `register(...)` - no existing code changes (Open/Closed). The analytic leaves
  * implement the same closed forms scipy.stats uses, via the special functions in special.ts.
  */
 

@@ -2,7 +2,7 @@
 //!
 //! Each distribution is created by name from canonical, library-independent parameters (SPEC.md §5)
 //! and exposes a uniform trait (`Distribution`). The analytic leaves implement the same closed forms
-//! scipy.stats uses, via the special functions in `special.rs` — so the Rust core reproduces the
+//! scipy.stats uses, via the special functions in `special.rs` - so the Rust core reproduces the
 //! conformance golden to 1e-9 without any scientific dependency.
 
 use crate::bulk;

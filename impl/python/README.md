@@ -1,4 +1,4 @@
-# rvx — Python reference implementation
+# rvx - Python reference implementation
 
 The scientific producer of the RV Exchange Format v1. Parses/validates `*.rv.json`, evaluates
 `log_prob` / `cdf`, draws samples, computes moments, and generates the conformance golden values.
@@ -12,9 +12,9 @@ Leaf distributions delegate to `scipy.stats`, the trusted scientific reference.
 | `operations.py` | `sample` / `log_prob` / `cdf` / `moments` / capabilities, each a visitor | Visitor |
 | `distributions.py` | leaf catalog keyed by name; scipy adapters + categorical/empirical | Registry + Adapter |
 | `ops.py` | transform ops (`affine/exp/log/pow/abs`) with inverse + Jacobian | Strategy + Registry |
-| `numerics.py` | `log_sum_exp`, Vose alias sampler | — |
-| `bulk.py` | empirical bulk arrays (npy sidecar / inline base64) | — |
-| `parse.py` | document ⇄ model, semantic validation, capability re-check | — |
+| `numerics.py` | `log_sum_exp`, Vose alias sampler | - |
+| `bulk.py` | empirical bulk arrays (npy sidecar / inline base64) | - |
+| `parse.py` | document ⇄ model, semantic validation, capability re-check | - |
 
 Adding a distribution = one `@register` (Open/Closed). Adding an operation = one new visitor;
 neither touches the model.
@@ -43,10 +43,10 @@ Non-invertible transforms degrade capabilities honestly: `rvx.log_prob` on `abs(
 PYTHONPATH=src python3 -m pytest          # from impl/python/
 ```
 
-- `tests/test_conformance.py` — runs the full language-neutral suite in `conformance/`. Deterministic
+- `tests/test_conformance.py` - runs the full language-neutral suite in `conformance/`. Deterministic
   outputs match golden within `1e-9`; sampling is checked statistically (KS vs the case's own CDF +
   moment tolerances).
-- `tests/test_properties.py` — Hypothesis: serialize→parse round-trip identity, sample↔CDF agreement
+- `tests/test_properties.py` - Hypothesis: serialize→parse round-trip identity, sample↔CDF agreement
   (KS), and validation rejections (bad weights, declared-capability mismatch).
 
 ## Generating the conformance golden

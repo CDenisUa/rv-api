@@ -3,7 +3,7 @@
 Conformance suite generator for the RV Exchange Format v1.
 
 Thin client over the Python reference implementation (`rvx`). Case *structure* is declared here as
-data; all golden values (capabilities, log_prob, cdf, moments) are computed by `rvx` — the scientific
+data; all golden values (capabilities, log_prob, cdf, moments) are computed by `rvx` - the scientific
 producer whose leaf distributions delegate to scipy.stats. There is no distribution math in this
 file (it lives only in the implementation), so the three concerns stay DRY:
 
@@ -40,7 +40,7 @@ SAMPLING_NO_KS = {"seed": 12345, "n": 200000, "ks_stat_max": None, "mean_atol": 
 # A sampling check must pass for *any* conforming RNG stream, not just numpy's. The sample mean has
 # standard error sqrt(Var/n); an absolute tolerance below that is only satisfiable by luck (e.g.
 # Weibull scale=350 has SEM ~0.09, larger than 0.05). So the per-case mean tolerance is widened to a
-# fixed multiple of the distribution's own SEM — a true 6-sigma band — keeping it language-neutral.
+# fixed multiple of the distribution's own SEM - a true 6-sigma band - keeping it language-neutral.
 SEM_SIGMAS = 6.0
 
 

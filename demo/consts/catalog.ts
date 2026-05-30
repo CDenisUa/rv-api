@@ -1,5 +1,5 @@
 // Distribution and transform-op metadata that drives the builder form. One source of truth for the
-// param names, labels, and sensible defaults — adding a distribution to the UI is a single entry.
+// param names, labels, and sensible defaults - adding a distribution to the UI is a single entry.
 
 export interface ParamSpec {
   key: string
@@ -18,7 +18,7 @@ export interface OpSpec {
   name: string
   label: string
   params: ParamSpec[]
-  /** Non-invertible ops drop log_prob/cdf — surfaced in the UI as honest capability degradation. */
+  /** Non-invertible ops drop log_prob/cdf - surfaced in the UI as honest capability degradation. */
   invertible: boolean
 }
 
@@ -37,7 +37,7 @@ export const OPS: OpSpec[] = [
   { name: 'exp', label: 'exp  (eˣ)', invertible: true, params: [] },
   { name: 'log', label: 'log  (ln x)', invertible: true, params: [] },
   { name: 'pow', label: 'pow  (xᵖ)', invertible: true, params: [p('exponent', 'p', 2)] },
-  { name: 'abs', label: 'abs  (|x|)  — drops log_prob', invertible: false, params: [] },
+  { name: 'abs', label: 'abs  (|x|)  - drops log_prob', invertible: false, params: [] },
 ]
 
 export function distSpec(name: string): DistSpec {

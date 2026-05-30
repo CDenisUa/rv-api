@@ -1,4 +1,4 @@
-// Pure transform: builder form state → the wire `.rv.json` document. No React, no I/O — trivially
+// Pure transform: builder form state → the wire `.rv.json` document. No React, no I/O - trivially
 // testable and reused by both the live UI and the JSON preview.
 
 // Types

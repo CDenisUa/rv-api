@@ -163,7 +163,7 @@ impl Prepared {
             ),
             Prepared::Mixture { weights, comps } => {
                 // Bucket draw positions by component in one O(n) pass, then sample each component
-                // once and scatter back — O(n + k) rather than scanning all n per component.
+                // once and scatter back - O(n + k) rather than scanning all n per component.
                 let idx = AliasSampler::new(weights).sample(rng, n);
                 let mut buckets: Vec<Vec<usize>> = vec![Vec::new(); comps.len()];
                 for (j, &c) in idx.iter().enumerate() {

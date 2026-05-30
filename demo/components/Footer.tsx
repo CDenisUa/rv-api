@@ -5,7 +5,7 @@ export function Footer() {
     <footer className="mt-16 border-t border-white/5">
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <p className="text-sm text-slate-500">
-          RV Exchange Format v1 — a portable, language-neutral way to serialize a random variable. The
+          RV Exchange Format v1 - a portable, language-neutral way to serialize a random variable. The
           spec, an executable conformance suite, and reference implementations in Python, TypeScript,
           and Rust (→ WebAssembly).
         </p>

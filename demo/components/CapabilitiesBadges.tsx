@@ -1,5 +1,5 @@
 // Shows the recomputed capabilities of the current RV. The point of the demo: capabilities are not
-// cosmetic — a non-invertible transform (abs) honestly drops log_prob/cdf.
+// cosmetic - a non-invertible transform (abs) honestly drops log_prob/cdf.
 
 // Types
 import type { Capabilities } from 'rvx'

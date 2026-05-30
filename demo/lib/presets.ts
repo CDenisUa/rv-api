@@ -29,13 +29,13 @@ export const PRESETS: Preset[] = [
   {
     id: 'weibull-strength',
     label: 'Weibull fracture strength',
-    note: 'Ceramic strength, shape 10, scale 350 MPa — a classic materials reliability model.',
+    note: 'Ceramic strength, shape 10, scale 350 MPa - a classic materials reliability model.',
     state: { ...base(), mode: 'leaf', leaf: { dist: 'weibull', params: { shape: 10, scale: 350 } } },
   },
   {
     id: 'bimodal-grains',
     label: 'Bimodal grain size',
-    note: '0.7·Lognormal(1, 0.3) + 0.3·Lognormal(2.5, 0.4) — two grain populations.',
+    note: '0.7·Lognormal(1, 0.3) + 0.3·Lognormal(2.5, 0.4) - two grain populations.',
     state: {
       ...base(),
       mode: 'mixture',
@@ -57,7 +57,7 @@ export const PRESETS: Preset[] = [
   },
   {
     id: 'abs-normal',
-    label: 'abs(Normal) — capability drop',
+    label: 'abs(Normal) - capability drop',
     note: 'Y = |X|. Non-invertible: log_prob and cdf are honestly dropped.',
     state: {
       ...base(),

@@ -1,7 +1,7 @@
-# rvx — Rust reference implementation
+# rvx - Rust reference implementation
 
 The systems / WebAssembly core of the RV Exchange Format v1. Parses/validates `*.rv.json`, evaluates
-`log_prob` / `cdf`, draws samples, and computes moments — pinned to the same language-neutral
+`log_prob` / `cdf`, draws samples, and computes moments - pinned to the same language-neutral
 conformance golden values as the Python and TypeScript references. Closed forms match `scipy.stats`
 to `1e-9` via hand-rolled special functions, with **no scientific dependency**, so the same core
 compiles to native and to WebAssembly for the demo.
@@ -23,7 +23,7 @@ compiles to native and to WebAssembly for the demo.
 
 The model is an exact algebraic data type; operations `match` on it, so adding a variant is a
 compile error until every operation handles it. A document is **compiled** into a `Prepared`
-evaluator that owns its leaf distributions — compile once, evaluate many (a KS sweep over 200k points
+evaluator that owns its leaf distributions - compile once, evaluate many (a KS sweep over 200k points
 never rebuilds the empirical KDE).
 
 ## Use
@@ -50,12 +50,12 @@ cargo test                 # conformance + property tests
 cargo bench                # criterion benchmarks (hot paths)
 ```
 
-- `tests/conformance.rs` — runs the full language-neutral suite in `../../conformance/`. Each case is
+- `tests/conformance.rs` - runs the full language-neutral suite in `../../conformance/`. Each case is
   validated against the canonical JSON Schema (`spec/rv.schema.json`) with the `jsonschema` crate,
   independently of the crate's serde door. Deterministic outputs (`log_prob`, `cdf`, analytic
   `moments`) match golden within `1e-9`; sampling is checked statistically (KS vs the case's own CDF
   + moment tolerances).
-- `tests/properties.rs` — proptest: serialize→parse round-trip identity, sample↔CDF agreement (KS),
+- `tests/properties.rs` - proptest: serialize→parse round-trip identity, sample↔CDF agreement (KS),
   and validation rejections (bad weights, declared-capability mismatch, invalid parameters).
 
 ## WebAssembly

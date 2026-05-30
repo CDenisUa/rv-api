@@ -2,7 +2,7 @@
 //!
 //! serde deserializes the wire document into a `Raw*` representation (structural stage); this module
 //! then builds the model and runs the semantic stage: weight/alignment rules, parameter sanity (via
-//! distribution construction), and capability re-validation — declared MUST equal recomputed.
+//! distribution construction), and capability re-validation - declared MUST equal recomputed.
 
 use crate::distributions::create;
 use crate::errors::{Result, RvError};

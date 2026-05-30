@@ -132,14 +132,14 @@ export function Studio() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Stat label="sample mean" value={fmt(mean)} />
               <Stat label="sample var" value={fmt(variance)} />
-              <Stat label="analytic mean" value={analysis.moments ? fmtMoment(analysis.moments.mean) : '—'} />
-              <Stat label="analytic var" value={analysis.moments ? fmtMoment(analysis.moments.variance) : '—'} />
+              <Stat label="analytic mean" value={analysis.moments ? fmtMoment(analysis.moments.mean) : '-'} />
+              <Stat label="analytic var" value={analysis.moments ? fmtMoment(analysis.moments.variance) : '-'} />
             </div>
             <p className="text-xs text-slate-500">
               Histogram drawn from {n.toLocaleString()} samples in a Web Worker (seed {seed}) by the{' '}
               <span className="text-slate-300">{engine === 'wasm' ? 'Rust core (WebAssembly)' : 'TypeScript engine'}</span>.
               The amber curve is the analytic density from the TypeScript engine
-              {analysis.caps?.can_log_prob ? ' — switch engines and the histogram is unchanged.' : ' — unavailable for this RV, so only the histogram is shown.'}
+              {analysis.caps?.can_log_prob ? ' - switch engines and the histogram is unchanged.' : ' - unavailable for this RV, so only the histogram is shown.'}
             </p>
           </>
         )}

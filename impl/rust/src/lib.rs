@@ -1,6 +1,6 @@
-//! rvx — reference Rust implementation of the RV Exchange Format v1 (systems / WASM core).
+//! rvx - reference Rust implementation of the RV Exchange Format v1 (systems / WASM core).
 //!
-//! Parses/validates `*.rv.json`, evaluates `log_prob` / `cdf`, draws samples, and computes moments —
+//! Parses/validates `*.rv.json`, evaluates `log_prob` / `cdf`, draws samples, and computes moments -
 //! pinned to the same language-neutral conformance golden values as the Python and TypeScript
 //! references. Closed forms match `scipy.stats` to 1e-9 via hand-rolled special functions, with no
 //! scientific dependency, so the same core compiles to native and to WebAssembly.

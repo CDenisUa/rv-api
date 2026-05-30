@@ -1,8 +1,8 @@
-# RV Exchange — Conformance Suite
+# RV Exchange - Conformance Suite
 
 A language-neutral, executable contract. Every implementation (Python, TypeScript, Rust) must load
 these cases and reproduce the golden outputs within tolerance. Passing this suite is the objective
-definition of "conformant" — analogous to the Web Platform Tests or SQL logic tests. It is also the
+definition of "conformant" - analogous to the Web Platform Tests or SQL logic tests. It is also the
 mechanism that would validate any LLM-generated implementation.
 
 ## Layout
@@ -11,7 +11,7 @@ mechanism that would validate any LLM-generated implementation.
 conformance/
 ├── manifest.json        # index of all cases
 ├── generate.py          # regenerates cases + golden from scipy (the reference source of truth)
-├── cases/<name>.rv.json # the RV document (input) — validates against spec/rv.schema.json
+├── cases/<name>.rv.json # the RV document (input) - validates against spec/rv.schema.json
 └── golden/<name>.json   # expected outputs for that case
 ```
 
@@ -35,20 +35,20 @@ For `joint` cases, `x` is a vector and `moments.mean` / `moments.variance` are p
 
 ## What an implementation MUST check per case
 
-1. **Validation** — the case validates against `spec/rv.schema.json` and passes semantic validation
+1. **Validation** - the case validates against `spec/rv.schema.json` and passes semantic validation
    (SPEC.md §6.2), including capability re-computation.
-2. **Capabilities** — recomputed capabilities equal the golden `capabilities`.
-3. **log_prob** — for each control point, `|computed − value| ≤ 1e-9` (absolute) when `log_prob` is
+2. **Capabilities** - recomputed capabilities equal the golden `capabilities`.
+3. **log_prob** - for each control point, `|computed − value| ≤ 1e-9` (absolute) when `log_prob` is
    present. When `null`, the implementation MUST report the operation as unavailable.
-4. **cdf** — same tolerance rule as `log_prob`.
-5. **moments** — analytic/closed-form moments match within `1e-9`; for `empirical` (sample-derived
+4. **cdf** - same tolerance rule as `log_prob`.
+5. **moments** - analytic/closed-form moments match within `1e-9`; for `empirical` (sample-derived
    moments) within the case's `mean_atol` / `var_rtol`.
-6. **sampling** — draw `n` samples with `seed`; when `ks_stat_max` is set, the Kolmogorov–Smirnov
+6. **sampling** - draw `n` samples with `seed`; when `ks_stat_max` is set, the Kolmogorov-Smirnov
    statistic against the case's own CDF MUST be `≤ ks_stat_max`. Additionally the sample mean/variance
    MUST satisfy `mean_atol` / `var_rtol`. (RNG streams differ across languages, so sampling is checked
    statistically, not byte-for-byte.)
 
-## Tolerances — why two regimes
+## Tolerances - why two regimes
 
 - **Deterministic outputs** (`log_prob`, `cdf`, analytic `moments`) are exact mathematics and use a
   tight `1e-9`.

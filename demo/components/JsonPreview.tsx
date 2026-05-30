@@ -3,7 +3,7 @@
 // Core
 import { useState } from 'react'
 
-/** The live `.rv.json` document, with copy-to-clipboard — this is the portable artifact other
+/** The live `.rv.json` document, with copy-to-clipboard - this is the portable artifact other
  *  languages consume. */
 export function JsonPreview({ value }: { value: unknown }) {
   const [copied, setCopied] = useState(false)

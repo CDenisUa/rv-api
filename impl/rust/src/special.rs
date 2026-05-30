@@ -2,10 +2,10 @@
 //!
 //! The conformance golden values were produced by scipy (the trusted reference). Without scipy in a
 //! systems/WASM runtime we implement the same mathematics with comparable accuracy:
-//!   - `lgamma`         — Lanczos approximation (≈1e-15).
-//!   - `reg_lower_gamma`— regularized lower incomplete gamma P(a,x) via series + continued fraction.
-//!   - `erf`            — derived from P(1/2, x²) (reuses the incomplete-gamma machinery).
-//!   - `reg_inc_beta`   — regularized incomplete beta Iₓ(a,b) via Lentz continued fraction.
+//!   - `lgamma`         - Lanczos approximation (≈1e-15).
+//!   - `reg_lower_gamma`- regularized lower incomplete gamma P(a,x) via series + continued fraction.
+//!   - `erf`            - derived from P(1/2, x²) (reuses the incomplete-gamma machinery).
+//!   - `reg_inc_beta`   - regularized incomplete beta Iₓ(a,b) via Lentz continued fraction.
 //!
 //! Algorithms follow Numerical Recipes (gser/gcf/betacf); deterministic and well inside 1e-9.
 

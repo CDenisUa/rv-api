@@ -3,10 +3,10 @@
  *
  * The conformance golden values were produced by scipy (the trusted reference). Without scipy in the
  * JS runtime we must implement the same mathematics with comparable accuracy:
- *   - `lgamma`       — Lanczos approximation (≈1e-15).
- *   - `regLowerGamma`— regularized lower incomplete gamma P(a,x) via series + continued fraction.
- *   - `erf`          — derived from P(1/2, x²) (reuses the incomplete-gamma machinery).
- *   - `regIncBeta`   — regularized incomplete beta Iₓ(a,b) via Lentz continued fraction.
+ *   - `lgamma`       - Lanczos approximation (≈1e-15).
+ *   - `regLowerGamma`- regularized lower incomplete gamma P(a,x) via series + continued fraction.
+ *   - `erf`          - derived from P(1/2, x²) (reuses the incomplete-gamma machinery).
+ *   - `regIncBeta`   - regularized incomplete beta Iₓ(a,b) via Lentz continued fraction.
  *
  * Algorithms follow Numerical Recipes (gser/gcf/betacf); they are deterministic and converge well
  * inside the suite's 1e-9 tolerance.

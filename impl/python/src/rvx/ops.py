@@ -32,7 +32,7 @@ class Op(ABC):
         raise NotInvertibleError(f"op '{self.name}' is not invertible")
 
     def log_abs_dinverse(self, y):
-        """log |d/dy inverse(y)| — the change-of-variables Jacobian term."""
+        """log |d/dy inverse(y)| - the change-of-variables Jacobian term."""
         raise NotInvertibleError(f"op '{self.name}' has no inverse Jacobian")
 
     def as_dict(self) -> dict:

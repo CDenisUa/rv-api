@@ -3,7 +3,7 @@
 //! Each test binary links this module independently, so not every binary uses every helper.
 #![allow(dead_code)]
 
-/// One-sample Kolmogorov–Smirnov statistic of `xs` against the continuous CDF `cdf`.
+/// One-sample Kolmogorov-Smirnov statistic of `xs` against the continuous CDF `cdf`.
 pub fn ks_statistic(xs: &[f64], cdf: impl Fn(f64) -> f64) -> f64 {
     let mut sorted = xs.to_vec();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());

@@ -1,5 +1,5 @@
 /**
- * Structural validation with Zod — the TypeScript-native door into the model.
+ * Structural validation with Zod - the TypeScript-native door into the model.
  *
  * This mirrors the canonical JSON Schema (spec/rv.schema.json) but in a form that yields static
  * types via inference, so the parser consumes a fully-typed document. The conformance suite

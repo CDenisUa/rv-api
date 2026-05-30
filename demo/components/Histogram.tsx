@@ -1,5 +1,5 @@
 // Density histogram with an analytic-density overlay, drawn as a single inline SVG (no chart
-// dependency — keeps the bundle tiny). Pure/presentational: all data is computed by the caller.
+// dependency - keeps the bundle tiny). Pure/presentational: all data is computed by the caller.
 
 // Utils
 import { fmt } from '@/lib/format'

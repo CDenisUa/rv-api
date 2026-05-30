@@ -4,7 +4,7 @@
  * JavaScript's `Math.random` cannot be seeded, so we ship our own generator (`sfc32`, a small fast
  * counter-based PRNG of good statistical quality) seeded via `splitmix32`. RNG streams differ across
  * languages by design, so the conformance suite checks sampling statistically (KS + moments), not
- * byte-for-byte — this generator only needs to be correct in distribution, which it is.
+ * byte-for-byte - this generator only needs to be correct in distribution, which it is.
  */
 
 export class RNG {
@@ -61,7 +61,7 @@ export class RNG {
     return Math.floor(this.uniform() * k)
   }
 
-  /** Standard normal via Box–Muller (caches the second deviate). */
+  /** Standard normal via Box-Muller (caches the second deviate). */
   normal(): number {
     if (this.spareNormal !== null) {
       const v = this.spareNormal
@@ -81,7 +81,7 @@ export class RNG {
     return -Math.log(1 - this.uniform())
   }
 
-  /** Standard gamma (scale 1) via Marsaglia–Tsang, with the U^(1/k) boost for shape < 1. */
+  /** Standard gamma (scale 1) via Marsaglia-Tsang, with the U^(1/k) boost for shape < 1. */
   standardGamma(shape: number): number {
     if (shape < 1) {
       const u = this.uniform()

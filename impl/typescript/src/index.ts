@@ -1,5 +1,5 @@
 /**
- * rvx — reference TypeScript implementation of the RV Exchange Format v1.
+ * rvx - reference TypeScript implementation of the RV Exchange Format v1.
  *
  * Typical use:
  *

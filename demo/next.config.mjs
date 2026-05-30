@@ -8,7 +8,7 @@ const nextConfig = {
   // sampler worker; webpack needs these experiments to instantiate it.
   webpack: (config) => {
     config.experiments = { ...config.experiments, asyncWebAssembly: true, topLevelAwait: true }
-    // The sampler runs in an ES-module worker (modern targets), so async/await is available — tell
+    // The sampler runs in an ES-module worker (modern targets), so async/await is available - tell
     // webpack, which otherwise warns when generating the async WASM instantiation code.
     config.output.environment = { ...config.output.environment, asyncFunction: true }
     return config

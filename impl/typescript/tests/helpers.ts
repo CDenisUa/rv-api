@@ -1,6 +1,6 @@
 /** Shared statistical helpers for the test suites (conformance + properties). */
 
-/** One-sample Kolmogorov–Smirnov statistic of `xs` against the continuous CDF `F`. */
+/** One-sample Kolmogorov-Smirnov statistic of `xs` against the continuous CDF `F`. */
 export function ksStatistic(xs: Float64Array, F: (x: number) => number): number {
   const sorted = Float64Array.from(xs).sort()
   const n = sorted.length
