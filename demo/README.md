@@ -73,8 +73,10 @@ cd impl/rust && wasm-pack build --release --target bundler --out-dir ../../demo/
 
 `next.config.mjs` enables webpack's `asyncWebAssembly` so the worker can import it.
 
-## Notes
+## Images
 
-- `public/images/icons/logo_designed.svg` is a placeholder - replace with the real brand asset.
-- The interactive UI (worker, chart) is build- and SSR-verified; give it a visual pass in a browser
-  (`npm run dev`) before shipping.
+Served from `public/images/`, grouped by purpose:
+
+- `images/brand/mcl-logo.jpg` - the MCL mark in the header (right).
+- `images/icons/logo_designed.svg` - the "Designed by Chepio" credit logo in the footer (per the
+  global branding rule: `opacity-25`/white at rest, full-colour on hover).

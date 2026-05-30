@@ -25,7 +25,7 @@ export default function Page() {
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo.jpg"
+            src="/images/brand/mcl-logo.jpg"
             alt="Materials Center Leoben"
             className="hidden h-12 w-auto shrink-0 rounded-md sm:block"
           />
