@@ -67,8 +67,8 @@ export function Studio() {
   }, [analysis, range])
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
-      <section className="rounded-2xl bg-slate-900/40 p-6 ring-1 ring-slate-800">
+    <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
+      <section className="rounded-2xl bg-slate-900/40 p-4 ring-1 ring-slate-800 sm:p-6">
         <h2 className="mb-4 text-lg font-semibold text-white">Build a random variable</h2>
         <RvBuilder state={state} setState={setState} />
         <div className="mt-6">
@@ -79,14 +79,14 @@ export function Studio() {
         </div>
       </section>
 
-      <section className="space-y-5 rounded-2xl bg-slate-900/40 p-6 ring-1 ring-slate-800">
+      <section className="space-y-5 rounded-2xl bg-slate-900/40 p-4 ring-1 ring-slate-800 sm:p-6">
         {analysis.error ? (
           <Banner tone="error">Invalid document: {analysis.error}</Banner>
         ) : (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <CapabilitiesBadges capabilities={analysis.caps!} />
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
                 <div className="inline-flex rounded-md bg-slate-800 p-0.5 ring-1 ring-slate-700" title="Sample with the TypeScript reference or the Rust core compiled to WebAssembly">
                   {(['ts', 'wasm'] as Engine[]).map((eng) => (
                     <button

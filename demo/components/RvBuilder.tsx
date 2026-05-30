@@ -47,7 +47,7 @@ export function RvBuilder({ state, setState }: RvBuilderProps) {
             <button
               key={m.id}
               onClick={() => setState((s) => ({ ...s, mode: m.id }))}
-              className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition sm:px-4 ${
                 state.mode === m.id ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'
               }`}
             >

@@ -43,14 +43,14 @@ export function Histogram({ bins, curve, range, curveLabel = 'analytic density' 
       {yTicks.map((t) => (
         <g key={`y${t}`}>
           <line x1={PAD.left} y1={sy(t)} x2={W - PAD.right} y2={sy(t)} stroke="currentColor" strokeOpacity={0.08} />
-          <text x={PAD.left - 8} y={sy(t) + 4} textAnchor="end" className="fill-slate-400" fontSize={11}>
+          <text x={PAD.left - 8} y={sy(t) + 4} textAnchor="end" className="fill-slate-400" fontSize={13}>
             {fmt(t, 2)}
           </text>
         </g>
       ))}
       {/* x labels */}
       {xTicks.map((t) => (
-        <text key={`x${t}`} x={sx(t)} y={H - 12} textAnchor="middle" className="fill-slate-400" fontSize={11}>
+        <text key={`x${t}`} x={sx(t)} y={H - 12} textAnchor="middle" className="fill-slate-400" fontSize={13}>
           {fmt(t, 3)}
         </text>
       ))}
@@ -66,7 +66,7 @@ export function Histogram({ bins, curve, range, curveLabel = 'analytic density' 
       {curve.length > 1 && (
         <g>
           <line x1={W - PAD.right - 150} y1={PAD.top + 6} x2={W - PAD.right - 130} y2={PAD.top + 6} className="stroke-amber-400" strokeWidth={2} />
-          <text x={W - PAD.right - 124} y={PAD.top + 10} className="fill-slate-300" fontSize={11}>
+          <text x={W - PAD.right - 124} y={PAD.top + 10} className="fill-slate-300" fontSize={13}>
             {curveLabel}
           </text>
         </g>

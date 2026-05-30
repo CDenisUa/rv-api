@@ -11,7 +11,7 @@ export function ConformancePanel() {
   const allPassed = checks.every((c) => c.passed)
 
   return (
-    <section className="rounded-2xl bg-slate-900/40 p-6 ring-1 ring-slate-800">
+    <section className="rounded-2xl bg-slate-900/40 p-4 ring-1 ring-slate-800 sm:p-6">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-lg font-semibold text-white">Python == TypeScript == Rust</h2>
         <p className="text-sm text-slate-400">
