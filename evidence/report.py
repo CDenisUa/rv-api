@@ -3,7 +3,7 @@
 
 For each conformance case: how many deterministic values were checked and the worst absolute
 deviation from golden. Then micro-benchmark the hot paths. Run from the repo root:
-    PYTHONPATH=impl/python/src python3 evidence/report.py
+    PYTHONPATH=generated/impl/python/src python3 evidence/report.py
 """
 
 # Core
@@ -16,7 +16,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-sys.path.insert(0, os.path.join(ROOT, "impl", "python", "src"))
+sys.path.insert(0, os.path.join(ROOT, "generated", "impl", "python", "src"))
 import rvx                                       # noqa: E402
 from rvx.errors import MomentsNotAvailable       # noqa: E402
 

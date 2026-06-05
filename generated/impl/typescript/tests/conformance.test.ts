@@ -22,9 +22,9 @@ import { ksStatistic, populationStats } from './helpers'
 
 const ABS_TOL = 1e-9
 const HERE = dirname(fileURLToPath(import.meta.url))
-const REPO_ROOT = resolve(HERE, '../../..')
+const REPO_ROOT = resolve(HERE, '../../../..')
 const CONFORMANCE = resolve(REPO_ROOT, 'conformance')
-const SPEC = resolve(REPO_ROOT, 'spec')
+const SPEC = resolve(REPO_ROOT, 'generated', 'spec')
 
 function loadJson(path: string): any {
   return JSON.parse(readFileSync(path, 'utf-8'))

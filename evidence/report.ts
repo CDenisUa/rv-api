@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
 // Services
-import { capabilities, cdf, logProb, moments, parseDocument, sample, RNG, type RVNode } from '../impl/typescript/src/index'
+import { capabilities, cdf, logProb, moments, parseDocument, sample, RNG, type RVNode } from '../generated/impl/typescript/src/index'
 
 const CONF = resolve(process.cwd(), 'conformance')
 const load = (p: string): any => JSON.parse(readFileSync(p, 'utf-8'))

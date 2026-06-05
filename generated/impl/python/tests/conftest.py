@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 SRC = Path(__file__).resolve().parents[1] / "src"
 CONFORMANCE = REPO_ROOT / "conformance"
 
@@ -18,7 +18,7 @@ def _load(path):
 
 @pytest.fixture(scope="session")
 def schema():
-    return _load(REPO_ROOT / "spec" / "rv.schema.json")
+    return _load(REPO_ROOT / "generated" / "spec" / "rv.schema.json")
 
 
 @pytest.fixture(scope="session")

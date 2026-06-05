@@ -11,6 +11,7 @@ venv/
 
 # Node / TypeScript
 node_modules/
+.pnpm-store/
 *.tsbuildinfo
 
 # Rust
@@ -20,6 +21,17 @@ target/
 .next/
 out/
 next-env.d.ts
+
+# Secrets / local env (never commit the LLM API key)
+.env
+.env.*
+!.env.example
+
+# Live pipeline scratch output (canonical artifacts live in generated/spec + generated/impl)
+generated/.live/
+
+# Local browser verification artifacts
+.playwright-mcp/
 
 # OS
 .DS_Store

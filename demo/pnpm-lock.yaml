@@ -18,8 +18,8 @@ importers:
         specifier: ^19.0.0
         version: 19.2.6(react@19.2.6)
       rvx:
-        specifier: file:../impl/typescript
-        version: file:../impl/typescript
+        specifier: file:../generated/impl/typescript
+        version: file:../generated/impl/typescript
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.0.0
@@ -526,8 +526,8 @@ packages:
     resolution: {integrity: sha512-sfWGGfavi0xr8Pg0sVsyHMAOziVYKgPLNrS7ig+ivMNb3wbCBw3KxtflsGBAwD3gYQlE/AEZsTLgToRrSCjb0Q==}
     engines: {node: '>=0.10.0'}
 
-  rvx@file:../impl/typescript:
-    resolution: {directory: ../impl/typescript, type: directory}
+  rvx@file:../generated/impl/typescript:
+    resolution: {directory: ../generated/impl/typescript, type: directory}
     engines: {node: '>=18'}
 
   scheduler@0.27.0:
@@ -932,7 +932,7 @@ snapshots:
 
   react@19.2.6: {}
 
-  rvx@file:../impl/typescript:
+  rvx@file:../generated/impl/typescript:
     dependencies:
       zod: 3.25.76
 

@@ -8,7 +8,7 @@ conformance value against the shared golden and micro-benchmarks the hot paths, 
 Like `conformance/generate.py`, this is a thin client: it contains no distribution math - it only
 aggregates what the three implementations report. Run from the repo root:
 
-    PYTHONPATH=impl/python/src python3 evidence/build_evidence.py
+    PYTHONPATH=generated/impl/python/src python3 evidence/build_evidence.py
 """
 
 # Core
@@ -20,20 +20,20 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOL = 1e-9
 
-# Use the tsx pinned in impl/typescript/devDependencies (installed by `npm ci`) rather than `npx
+# Use the tsx pinned in generated/impl/typescript/devDependencies (installed by `npm ci`) rather than `npx
 # tsx`, which would fetch an unpinned version from the network - keeping the evidence pack
 # reproducible and offline.
-TSX = os.path.join(ROOT, "impl", "typescript", "node_modules", ".bin", "tsx")
+TSX = os.path.join(ROOT, "generated", "impl", "typescript", "node_modules", ".bin", "tsx")
 
 REPORTERS = [
     ("Python", [sys.executable, "evidence/report.py"], ROOT),
     ("TypeScript", [TSX, "evidence/report.ts"], ROOT),
-    ("Rust", ["cargo", "run", "--release", "--quiet", "--example", "report"], os.path.join(ROOT, "impl", "rust")),
+    ("Rust", ["cargo", "run", "--release", "--quiet", "--example", "report"], os.path.join(ROOT, "generated", "impl", "rust")),
 ]
 
 
 def run_reporter(name, cmd, cwd):
-    env = dict(os.environ, PYTHONPATH=os.path.join(ROOT, "impl", "python", "src"))
+    env = dict(os.environ, PYTHONPATH=os.path.join(ROOT, "generated", "impl", "python", "src"))
     out = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True)
     if out.returncode != 0:
         sys.exit(f"reporter {name} failed:\n{out.stderr}")
@@ -157,12 +157,12 @@ independent of sample count.
 
 ```bash
 # Conformance suites (each asserts agreement @1e-9):
-cd impl/python && PYTHONPATH=src python3 -m pytest
-cd impl/typescript && npm test
-cd impl/rust && cargo test
+cd generated/impl/python && PYTHONPATH=src python3 -m pytest
+cd generated/impl/typescript && npm test
+cd generated/impl/rust && cargo test
 
 # Regenerate this pack:
-PYTHONPATH=impl/python/src python3 evidence/build_evidence.py
+PYTHONPATH=generated/impl/python/src python3 evidence/build_evidence.py
 ```
 """
 

@@ -21,7 +21,7 @@ jobs:
       - name: Install
         run: pip install numpy scipy pytest hypothesis jsonschema
       - name: Conformance + property tests
-        working-directory: impl/python
+        working-directory: generated/impl/python
         run: PYTHONPATH=src python -m pytest -q
 
   typescript:
@@ -33,13 +33,13 @@ jobs:
         with:
           node-version: '20'
       - name: Install
-        working-directory: impl/typescript
+        working-directory: generated/impl/typescript
         run: npm ci
       - name: Typecheck
-        working-directory: impl/typescript
+        working-directory: generated/impl/typescript
         run: npm run typecheck
       - name: Conformance + property tests
-        working-directory: impl/typescript
+        working-directory: generated/impl/typescript
         run: npm test
 
   rust:
@@ -52,13 +52,13 @@ jobs:
           components: clippy
           targets: wasm32-unknown-unknown
       - name: Clippy
-        working-directory: impl/rust
+        working-directory: generated/impl/rust
         run: cargo clippy --all-targets -- -D warnings
       - name: Conformance + property tests
-        working-directory: impl/rust
+        working-directory: generated/impl/rust
         run: cargo test
       - name: WASM build
-        working-directory: impl/rust
+        working-directory: generated/impl/rust
         run: cargo build --release --target wasm32-unknown-unknown --features wasm
 
   demo:
@@ -74,7 +74,7 @@ jobs:
           node-version: '20'
           cache: pnpm
           cache-dependency-path: demo/pnpm-lock.yaml
-      # `file:../impl/typescript` links the rvx engine and pnpm pulls in its deps (zod).
+      # `file:../generated/impl/typescript` links the rvx engine and pnpm pulls in its deps (zod).
       - name: Install
         working-directory: demo
         run: pnpm install --frozen-lockfile
@@ -97,7 +97,7 @@ jobs:
       - name: Install Python deps
         run: pip install numpy scipy
       - name: Install TypeScript engine
-        working-directory: impl/typescript
+        working-directory: generated/impl/typescript
         run: npm ci
       - name: Generate evidence pack (exits non-zero on any cross-language mismatch > 1e-9)
-        run: PYTHONPATH=impl/python/src python evidence/build_evidence.py
+        run: PYTHONPATH=generated/impl/python/src python evidence/build_evidence.py

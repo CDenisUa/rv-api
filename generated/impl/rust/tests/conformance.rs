@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 const ABS_TOL: f64 = 1e-9;
 
 fn repo_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").canonicalize().unwrap()
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..").canonicalize().unwrap()
 }
 
 fn load(path: &Path) -> Value {
@@ -46,7 +46,7 @@ fn golden_moment_values(v: &Value) -> Vec<f64> {
 fn conformance_suite() {
     let root = repo_root();
     let conf = root.join("conformance");
-    let schema = load(&root.join("spec/rv.schema.json"));
+    let schema = load(&root.join("generated/spec/rv.schema.json"));
     let validator = jsonschema::validator_for(&schema).expect("compile schema");
     let manifest = load(&conf.join("manifest.json"));
 

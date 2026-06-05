@@ -56,9 +56,9 @@ TypeScript and Rust evaluate scalars in tight loops), so read those rows per-lan
 
 | metric | Python | TypeScript | Rust |
 |---|---|---|---|
-| sample (ns / draw) | 17.3 | 30.1 | 22.5 |
-| normal log_prob (ns / call) | 18.5 | 61.2 | 12.6 |
-| gamma cdf (ns / call) | 51.7 | 122.0 | 41.1 |
+| sample (ns / draw) | 14.6 | 32.3 | 8.3 |
+| normal log_prob (ns / call) | 15.6 | 58.4 | 12.0 |
+| gamma cdf (ns / call) | 60.1 | 119.7 | 40.9 |
 
 The Rust core also compiles to `wasm32-unknown-unknown` (~337 KB), so the same verified engine runs
 natively, in Node, and in the browser (the demo samples in a Web Worker).
@@ -81,10 +81,10 @@ independent of sample count.
 
 ```bash
 # Conformance suites (each asserts agreement @1e-9):
-cd impl/python && PYTHONPATH=src python3 -m pytest
-cd impl/typescript && npm test
-cd impl/rust && cargo test
+cd generated/impl/python && PYTHONPATH=src python3 -m pytest
+cd generated/impl/typescript && npm test
+cd generated/impl/rust && cargo test
 
 # Regenerate this pack:
-PYTHONPATH=impl/python/src python3 evidence/build_evidence.py
+PYTHONPATH=generated/impl/python/src python3 evidence/build_evidence.py
 ```

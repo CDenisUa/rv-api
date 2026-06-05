@@ -11,7 +11,7 @@ file (it lives only in the implementation), so the three concerns stay DRY:
 
 TypeScript and Rust implementations are then pinned to these same golden numbers.
 
-Run:  PYTHONPATH=../impl/python/src python3 conformance/generate.py
+Run:  PYTHONPATH=generated/impl/python/src python3 conformance/generate.py
 """
 
 # Core
@@ -23,7 +23,7 @@ import sys
 import numpy as np
 
 # Make the reference implementation importable without installing it.
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "impl", "python", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "generated", "impl", "python", "src"))
 import rvx                                            # noqa: E402
 from rvx.bulk import encode_base64                    # noqa: E402
 from rvx.errors import MomentsNotAvailable            # noqa: E402
