@@ -11,7 +11,7 @@ mechanism that would validate any LLM-generated implementation.
 conformance/
 ├── manifest.json        # index of all cases
 ├── generate.py          # regenerates cases + golden from scipy (the reference source of truth)
-├── cases/<name>.rv.json # the RV document (input) - validates against spec/rv.schema.json
+├── cases/<name>.rv.json # the RV document (input) - validates against generated/spec/rv.schema.json
 └── golden/<name>.json   # expected outputs for that case
 ```
 
@@ -35,7 +35,7 @@ For `joint` cases, `x` is a vector and `moments.mean` / `moments.variance` are p
 
 ## What an implementation MUST check per case
 
-1. **Validation** - the case validates against `spec/rv.schema.json` and passes semantic validation
+1. **Validation** - the case validates against `generated/spec/rv.schema.json` and passes semantic validation
    (SPEC.md §6.2), including capability re-computation.
 2. **Capabilities** - recomputed capabilities equal the golden `capabilities`.
 3. **log_prob** - for each control point, `|computed − value| ≤ 1e-9` (absolute) when `log_prob` is

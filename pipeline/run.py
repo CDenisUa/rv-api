@@ -60,6 +60,9 @@ class ClaudeCliClient:
     Uses the machine's existing Claude Code subscription auth, so no API key is required. All tools
     are disabled (`--tools ""`) so the model emits the requested files inside the JSON `result`
     rather than trying to write them itself - which is exactly the contract the parser expects.
+    `--strict-mcp-config` with an empty `--mcp-config` loads no MCP servers, so machine-configured
+    MCP tools (e.g. Google Drive) can't leak in past `--tools ""` and tempt the model to "write" a
+    file via a tool - which would trigger a permission denial and a clarifying question instead.
     """
 
     def __init__(self, model: str):
@@ -72,7 +75,8 @@ class ClaudeCliClient:
             )
 
     def complete(self, prompt: str, system: str | None = None) -> str:
-        cmd = [self.exe, "-p", "--tools", "", "--output-format", "json", "--model", self.model]
+        cmd = [self.exe, "-p", "--tools", "", "--strict-mcp-config", "--mcp-config",
+               '{"mcpServers":{}}', "--output-format", "json", "--model", self.model]
         if system:
             cmd += ["--append-system-prompt", system]
         try:

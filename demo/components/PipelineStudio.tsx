@@ -13,45 +13,69 @@
 import { useState } from 'react'
 // Components
 import { GenerationProgress } from '@/components/GenerationProgress'
+import { LiveDemo } from '@/components/LiveDemo'
+import { LiveProof } from '@/components/LiveProof'
 import { Studio } from '@/components/Studio'
 // Hooks
 import { useGeneration, type GenState } from '@/hooks/useGeneration'
+// Services
+import { loadLiveEngine, type LiveEngine } from '@/lib/live-engine'
 // Types
+import type { LiveProofCase } from '@/lib/conformance'
 import type { Language, PipelineMode } from '@/types/pipeline'
 
 interface Props {
+  /** Full canonical prompts - shown read-only in Replay (they produce the committed artifacts). */
   prompts: { spec: string; impl: string }
+  /** Compact prompts used (and editable) in Live, so a watch-it-stream run finishes in seconds. */
+  livePrompts: { spec: string; impl: string }
   canonicalSpec: { specMd: string; schema: string }
   canonicalImpl: Record<Language, Record<string, string>>
   liveAvailable: boolean
-  /** Server-rendered cross-language proof (the ConformancePanel), shown on the last step. */
+  /** Server-rendered cross-language proof (the ConformancePanel), shown on the last step in Replay. */
   proofSlot: React.ReactNode
+  /** Frozen normal/uniform golden cases the live-generated engine is proven against in Live mode. */
+  liveProofCases: LiveProofCase[]
 }
 
 const LANGUAGES: Language[] = ['python', 'typescript', 'rust']
 const STEPS = ['Specification', 'Implementation', 'Demo', 'Proof']
 const LAST = STEPS.length
 
-export function PipelineStudio({ prompts, canonicalSpec, canonicalImpl, liveAvailable, proofSlot }: Props) {
+export function PipelineStudio({ prompts, livePrompts, canonicalSpec, canonicalImpl, liveAvailable, proofSlot, liveProofCases }: Props) {
   const [mode, setMode] = useState<PipelineMode>('replay')
   const [step, setStep] = useState(1)
 
-  // Results carried across steps.
-  const [specPrompt, setSpecPrompt] = useState(prompts.spec)
+  // Results carried across steps. The editable prompts seed from the compact Live versions; Replay
+  // shows the full canonical prompts (read-only) instead - see `displayPrompt` below.
+  const [specPrompt, setSpecPrompt] = useState(livePrompts.spec)
   const [specFiles, setSpecFiles] = useState<Record<string, string> | null>(null)
-  const [implPrompt, setImplPrompt] = useState(prompts.impl)
+  const [implPrompt, setImplPrompt] = useState(livePrompts.impl)
   const [language, setLanguage] = useState<Language>('python')
   const [implByLang, setImplByLang] = useState<Partial<Record<Language, Record<string, string>>>>({})
+
+  // Live-only: the generated JavaScript engine that powers steps 3-4. `engineFiles` is the raw
+  // generated source (for the viewer); `engine` is the loaded module once it passes the contract.
+  const [engineFiles, setEngineFiles] = useState<Record<string, string> | null>(null)
+  const [engine, setEngine] = useState<LiveEngine | null>(null)
+  const [engineError, setEngineError] = useState<string | null>(null)
 
   // Live generation drivers (elapsed timer + token/progress stream). Replay sets files directly.
   const specGen = useGeneration()
   const implGen = useGeneration()
+
+  function resetEngine() {
+    setEngineFiles(null)
+    setEngine(null)
+    setEngineError(null)
+  }
 
   function switchMode(m: PipelineMode) {
     setMode(m)
     setStep(1)
     setSpecFiles(null)
     setImplByLang({})
+    resetEngine()
     specGen.reset()
     implGen.reset()
   }
@@ -62,7 +86,7 @@ export function PipelineStudio({ prompts, canonicalSpec, canonicalImpl, liveAvai
       setSpecFiles({ 'SPEC.md': canonicalSpec.specMd, 'rv.schema.json': canonicalSpec.schema })
       return
     }
-    const files = await specGen.run({ stage: 'spec', prompt: specPrompt })
+    const files = await specGen.run({ stage: 'spec', prompt: specPrompt, compact: true })
     if (files) setSpecFiles(files)
   }
 
@@ -72,8 +96,17 @@ export function PipelineStudio({ prompts, canonicalSpec, canonicalImpl, liveAvai
       setImplByLang((s) => ({ ...s, [language]: canonicalImpl[language] }))
       return
     }
-    const files = await implGen.run({ stage: 'impl', language, prompt: implPrompt })
-    if (files) setImplByLang((s) => ({ ...s, [language]: files }))
+    // Live: generate one JavaScript engine, then load it so steps 3-4 can run it.
+    resetEngine()
+    const files = await implGen.run({ stage: 'impl', prompt: implPrompt, compact: true })
+    if (!files) return
+    setEngineFiles(files)
+    const source = files['engine.js'] ?? Object.values(files)[0]
+    try {
+      setEngine(await loadLiveEngine(source))
+    } catch (e) {
+      setEngineError(e instanceof Error ? e.message : String(e))
+    }
   }
 
   return (
@@ -95,7 +128,7 @@ export function PipelineStudio({ prompts, canonicalSpec, canonicalImpl, liveAvai
       {step === 1 && (
         <SpecStep
           mode={mode}
-          prompt={specPrompt}
+          prompt={mode === 'live' ? specPrompt : prompts.spec}
           setPrompt={setSpecPrompt}
           files={specFiles}
           gen={specGen.state}
@@ -107,12 +140,14 @@ export function PipelineStudio({ prompts, canonicalSpec, canonicalImpl, liveAvai
       {step === 2 && (
         <ImplStep
           mode={mode}
-          prompt={implPrompt}
+          prompt={mode === 'live' ? implPrompt : prompts.impl}
           setPrompt={setImplPrompt}
           language={language}
           setLanguage={setLanguage}
-          files={implByLang[language] ?? null}
+          files={mode === 'live' ? engineFiles : implByLang[language] ?? null}
           generatedLangs={Object.keys(implByLang) as Language[]}
+          engine={engine}
+          engineError={engineError}
           gen={implGen.state}
           onRun={runImpl}
           onBack={() => setStep(1)}
@@ -120,16 +155,22 @@ export function PipelineStudio({ prompts, canonicalSpec, canonicalImpl, liveAvai
         />
       )}
 
-      {step === 3 && <DemoStep onBack={() => setStep(2)} onNext={() => setStep(4)} />}
+      {step === 3 && (
+        <DemoStep mode={mode} engine={engine} onBack={() => setStep(2)} onNext={() => setStep(4)} />
+      )}
 
       {step === 4 && (
         <ProofStep
+          mode={mode}
           proofSlot={proofSlot}
+          engine={engine}
+          liveProofCases={liveProofCases}
           onBack={() => setStep(3)}
           onRestart={() => {
             setStep(1)
             setSpecFiles(null)
             setImplByLang({})
+            resetEngine()
           }}
         />
       )}
@@ -278,6 +319,8 @@ function ImplStep({
   setLanguage,
   files,
   generatedLangs,
+  engine,
+  engineError,
   gen,
   onRun,
   onBack,
@@ -290,40 +333,70 @@ function ImplStep({
   setLanguage: (l: Language) => void
   files: Record<string, string> | null
   generatedLangs: Language[]
+  engine: LiveEngine | null
+  engineError: string | null
   gen: GenState
   onRun: () => void
   onBack: () => void
   onNext: () => void
 }) {
+  const live = mode === 'live'
   return (
     <StepBody
-      title="Step 2 — Generate a reader/writer"
-      info="Now a deliberately tiny prompt, plus the machine-readable spec from step 1, produces a full reader/writer in the language you pick. The prompt carries no maths — the spec does all the work. Generate one, two, or all three languages from the same spec."
+      title="Step 2 — Generate the engine"
+      info={
+        live
+          ? 'A tiny prompt, plus the spec from step 1, generates one browser-ready JavaScript engine with a fixed API. The demo and proof below run this exact code — so what Claude writes here is what gets exercised and verified next.'
+          : 'A deliberately tiny prompt, plus the machine-readable spec from step 1, produces a full reader/writer in the language you pick. The prompt carries no maths — the spec does all the work. Generate one, two, or all three languages from the same spec.'
+      }
     >
-      <div className="flex flex-wrap gap-1.5">
-        {LANGUAGES.map((l) => (
-          <button
-            key={l}
-            onClick={() => setLanguage(l)}
-            className={`relative rounded-md px-3 py-1 text-sm font-medium transition ${
-              language === l ? 'bg-sky-500 text-white' : 'bg-slate-800 text-slate-300 hover:text-white'
-            }`}
-          >
-            {l}
-            {generatedLangs.includes(l) && <span className="ml-1 text-emerald-300">✓</span>}
-          </button>
-        ))}
-      </div>
-      <PromptBox value={prompt} onChange={setPrompt} editable={mode === 'live'} label="Prompt #2 (short)" />
-      <RunButton mode={mode} loading={gen.status === 'running'} onRun={onRun} label={`${language} reader/writer`} done={!!files} />
-      {mode === 'live' && <GenerationProgress state={gen} />}
-      {files && <FileViewer key={language + Object.keys(files).join(',')} files={files} />}
+      {live ? (
+        <p className="text-xs text-slate-400">
+          Live generates <span className="text-slate-200">JavaScript</span> so it can run in your browser. The
+          cross-language proof in step 4 still checks it against the frozen Python (scipy) and Rust references.
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {LANGUAGES.map((l) => (
+            <button
+              key={l}
+              onClick={() => setLanguage(l)}
+              className={`relative rounded-md px-3 py-1 text-sm font-medium transition ${
+                language === l ? 'bg-sky-500 text-white' : 'bg-slate-800 text-slate-300 hover:text-white'
+              }`}
+            >
+              {l}
+              {generatedLangs.includes(l) && <span className="ml-1 text-emerald-300">✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+      <PromptBox value={prompt} onChange={setPrompt} editable={live} label="Prompt #2 (short)" />
+      <RunButton
+        mode={mode}
+        loading={gen.status === 'running'}
+        onRun={onRun}
+        label={live ? 'JavaScript engine' : `${language} reader/writer`}
+        done={live ? !!engine : !!files}
+      />
+      {live && <GenerationProgress state={gen} />}
+      {live && engineError && (
+        <div className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
+          The generated engine didn’t match the required API: {engineError}. Regenerate, or switch to Replay.
+        </div>
+      )}
+      {live && engine && (
+        <div className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300 ring-1 ring-emerald-500/30">
+          Engine loaded ✓ — it exposes the full contract and is ready to drive the demo and proof.
+        </div>
+      )}
+      {files && <FileViewer key={(live ? 'live' : language) + Object.keys(files).join(',')} files={files} />}
       <NavRow>
         <BackButton onClick={onBack} />
         <NextButton
           onClick={onNext}
-          enabled={generatedLangs.length > 0}
-          hint="Generate at least one implementation"
+          enabled={live ? !!engine : generatedLangs.length > 0}
+          hint={live ? 'Generate the engine to continue' : 'Generate at least one implementation'}
           label="Continue to demo →"
         />
       </NavRow>
@@ -333,35 +406,72 @@ function ImplStep({
 
 // ---------- step 3 (demo) ----------
 
-function DemoStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+function DemoStep({
+  mode,
+  engine,
+  onBack,
+  onNext,
+}: {
+  mode: PipelineMode
+  engine: LiveEngine | null
+  onBack: () => void
+  onNext: () => void
+}) {
+  const live = mode === 'live'
   return (
     <StepBody
       title="Step 3 — Use the format"
-      info="Build random variables of different kinds (a distribution, a transform of one, or a mixture). Each serializes to a portable .rv.json document and is sampled off-thread by the generated engine — the same format the proof step validates across languages."
+      info={
+        live
+          ? 'Build a normal or uniform random variable. It serializes to a portable .rv.json document and is sampled and evaluated by the JavaScript engine you generated in step 2 — the very same code the proof validates next.'
+          : 'Build random variables of different kinds (a distribution, a transform of one, or a mixture). Each serializes to a portable .rv.json document and is sampled off-thread by the canonical engine — the same format the proof step validates across languages.'
+      }
     >
-      <Studio />
+      {live ? (
+        engine ? (
+          <LiveDemo engine={engine} />
+        ) : (
+          <NeedEngine />
+        )
+      ) : (
+        <Studio />
+      )}
       <NavRow>
         <BackButton onClick={onBack} />
-        <NextButton onClick={onNext} enabled hint="" label="Continue to proof →" />
+        <NextButton onClick={onNext} enabled={!live || !!engine} hint="Generate the engine in step 2" label="Continue to proof →" />
       </NavRow>
     </StepBody>
+  )
+}
+
+function NeedEngine() {
+  return (
+    <div className="rounded-lg bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
+      No generated engine yet — go back to step 2 and generate the JavaScript engine, then this step runs it.
+    </div>
   )
 }
 
 // ---------- step 4 (proof only) ----------
 
 function ProofStep({
+  mode,
   proofSlot,
+  engine,
+  liveProofCases,
   onBack,
   onRestart,
 }: {
+  mode: PipelineMode
   proofSlot: React.ReactNode
+  engine: LiveEngine | null
+  liveProofCases: LiveProofCase[]
   onBack: () => void
   onRestart: () => void
 }) {
   return (
     <div className="space-y-3">
-      {proofSlot}
+      {mode === 'live' ? engine ? <LiveProof engine={engine} cases={liveProofCases} /> : <NeedEngine /> : proofSlot}
       <NavRow>
         <BackButton onClick={onBack} />
         <button onClick={onRestart} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:text-white">

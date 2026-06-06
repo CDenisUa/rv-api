@@ -40,7 +40,7 @@ Non-invertible transforms degrade capabilities honestly: `rvx.log_prob` on `abs(
 ## Tests
 
 ```bash
-PYTHONPATH=src python3 -m pytest          # from impl/python/
+PYTHONPATH=src python3 -m pytest          # from generated/impl/python/
 ```
 
 - `tests/test_conformance.py` - runs the full language-neutral suite in `conformance/`. Deterministic
@@ -52,7 +52,7 @@ PYTHONPATH=src python3 -m pytest          # from impl/python/
 ## Generating the conformance golden
 
 ```bash
-PYTHONPATH=impl/python/src python3 conformance/generate.py
+PYTHONPATH=generated/impl/python/src python3 conformance/generate.py
 ```
 
 The generator is a thin client: case *structure* is declared as data and all golden numbers come

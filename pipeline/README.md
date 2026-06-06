@@ -40,7 +40,7 @@ the conformance suite before committing.
 |-------------|----------|------------------------------------------|
 | `RVX_MODEL` | `sonnet` | Claude model alias/id used for generation |
 
-`run.py` shells out to the local `claude` CLI in headless mode (`-p --tools "" --output-format text`)
+`run.py` shells out to the local `claude` CLI in headless mode (`-p --tools "" --output-format json`)
 and uses your Claude Code subscription - nothing to configure, no key, no quota.
 
 No third-party dependencies - `run.py` uses only the Python standard library (subprocess).

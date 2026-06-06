@@ -36,12 +36,13 @@ pnpm run start
 > Uses **pnpm**. `pnpm-workspace.yaml` allows the optional `sharp` build dependency, so install
 > isn't blocked by pnpm's ignored-builds guard.
 
-> Requires the sibling `impl/typescript` package (linked via `file:../impl/typescript`) and the
+> Requires the sibling `generated/impl/typescript` package (linked via
+> `file:../generated/impl/typescript`) and the
 > `conformance/` directory at the repo root (read at render time for the evidence panel).
 
 You do not need to start Python or Rust services to run the UI. The browser demo uses the local
 TypeScript package directly and the committed `wasm-rvx/` bundle for the Rust engine. Regenerate the
-WASM bundle only after changing `impl/rust`.
+WASM bundle only after changing `generated/impl/rust`.
 
 ## Useful commands
 
@@ -53,7 +54,7 @@ pnpm run start      # serve the production build
 ```
 
 If the app cannot resolve `rvx`, reinstall from inside `demo/` so pnpm recreates the local
-`file:../impl/typescript` link. If the conformance panel cannot load data, run the app from this
+`file:../generated/impl/typescript` link. If the conformance panel cannot load data, run the app from this
 repository layout; the server component expects `../conformance` relative to `demo/`.
 
 ## What it shows
@@ -106,10 +107,10 @@ The committed `wasm-rvx/` lets the build run without a Rust toolchain.
 ## The WASM engine
 
 `wasm-rvx/` is generated from the Rust crate and committed so the demo builds anywhere. Regenerate
-after changing `impl/rust`:
+after changing `generated/impl/rust`:
 
 ```bash
-cd impl/rust && wasm-pack build --release --target bundler --out-dir ../../demo/wasm-rvx --features wasm
+cd generated/impl/rust && wasm-pack build --release --target bundler --out-dir ../../../demo/wasm-rvx --features wasm
 ```
 
 `next.config.mjs` enables webpack's `asyncWebAssembly` so the worker can import it.

@@ -24,9 +24,9 @@ the same mechanism that would validate an LLM-generated implementation.
 ## Repository layout
 
 ```
-spec/          # JSON Schema (Draft 2020-12) + human-readable SPEC.md (semantics, capabilities, Big-O)
+generated/spec/ # JSON Schema (Draft 2020-12) + human-readable SPEC.md (semantics, capabilities, Big-O)
 conformance/   # language-neutral *.rv.json cases + golden values (the contract); generate.py
-impl/
+generated/impl/
   python/      # reference "scientific producer" - scipy.stats adapter; generates the golden
   typescript/  # reference (hero) - discriminated-union ADT + never, Zod, visitor, alias method
   rust/        # systems core - enum ADT, serde, criterion benches; compiles to WebAssembly
@@ -71,33 +71,32 @@ Each conformance suite asserts agreement with the shared golden within **1e-9**.
 
 ```bash
 # Python - scipy adapter; also produces the golden
-cd impl/python
-pip install numpy scipy pytest hypothesis jsonschema
-PYTHONPATH=src python3 -m pytest                 # 108 passed, 5 skipped
+(cd generated/impl/python && \
+  pip install numpy scipy pytest hypothesis jsonschema && \
+  PYTHONPATH=src python3 -m pytest)              # 108 passed, 5 skipped
 
 # TypeScript
-cd impl/typescript
-npm install
-npm test                                         # 114 passed
-npm run typecheck
+(cd generated/impl/typescript && \
+  npm install && \
+  npm test && \
+  npm run typecheck)
 
 # Rust - conformance + property tests
-cd impl/rust
-cargo test
+(cd generated/impl/rust && cargo test)
 ```
 
 ### Build the Rust engine to WebAssembly (optional)
 
 ```bash
 rustup target add wasm32-unknown-unknown
-cd impl/rust
+cd generated/impl/rust
 cargo build --release --target wasm32-unknown-unknown --features wasm
 ```
 
 ### Run the demo app
 
 The dashboard lives in `demo/` and uses the TypeScript `rvx` package through a local
-`file:../impl/typescript` dependency. It needs **pnpm** - if it is not available, enable it with
+`file:../generated/impl/typescript` dependency. It needs **pnpm** - if it is not available, enable it with
 Corepack first:
 
 ```bash
@@ -118,7 +117,7 @@ needed to use the app. For a production check: `pnpm run typecheck && pnpm run b
 ### Regenerate the cross-language evidence pack
 
 ```bash
-PYTHONPATH=impl/python/src python3 evidence/build_evidence.py
+PYTHONPATH=generated/impl/python/src python3 evidence/build_evidence.py
 ```
 
 Each implementation independently re-derives every conformance value and the script asserts they

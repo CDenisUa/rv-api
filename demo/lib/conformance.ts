@@ -76,6 +76,65 @@ function check(entry: ManifestEntry): CrossCheck {
   }
 }
 
+// --- Live proof ---------------------------------------------------------------------------------
+// The frozen golden cases a generated engine can be checked against in the browser: only the leaf
+// `normal`/`uniform` cases, since that is the scope of the compact live spec. Each carries the
+// normalized compact document (canonical extras like `capabilities` stripped) plus the scalar golden
+// values, so the client can run the just-generated engine over them and compare within 1e-9.
+
+export interface LiveProofPoint {
+  x: number
+  value: number
+}
+
+export interface LiveProofCase {
+  name: string
+  dist: 'normal' | 'uniform'
+  /** Normalized to the compact format: { format_version, metadata, rv: { kind, dist, params } }. */
+  doc: { format_version: string; metadata?: unknown; rv: { kind: 'leaf'; dist: string; params: Record<string, number> } }
+  logProb: LiveProofPoint[]
+  cdf: LiveProofPoint[]
+  moments: { mean: number; variance: number } | null
+}
+
+export function loadLiveProofCases(): LiveProofCase[] {
+  const manifest = readJson(join(CONFORMANCE_DIR, 'manifest.json')) as { cases: ManifestEntry[] }
+  const cases: LiveProofCase[] = []
+  for (const entry of manifest.cases) {
+    if (entry.kind !== 'leaf') continue
+    const raw = readJson(join(CONFORMANCE_DIR, entry.case)) as {
+      format_version: string
+      metadata?: unknown
+      rv: { dist: string; params: Record<string, number> }
+    }
+    const dist = raw.rv.dist
+    if (dist !== 'normal' && dist !== 'uniform') continue
+    const golden = readJson(join(CONFORMANCE_DIR, entry.golden)) as Golden
+    cases.push({
+      name: entry.name,
+      dist,
+      doc: {
+        format_version: raw.format_version,
+        metadata: raw.metadata,
+        rv: { kind: 'leaf', dist, params: raw.rv.params },
+      },
+      logProb: scalarPoints(golden.log_prob),
+      cdf: scalarPoints(golden.cdf),
+      moments:
+        golden.moments && typeof golden.moments.mean === 'number' && typeof golden.moments.variance === 'number'
+          ? { mean: golden.moments.mean, variance: golden.moments.variance }
+          : null,
+    })
+  }
+  return cases
+}
+
+function scalarPoints(pts: Golden['log_prob']): LiveProofPoint[] {
+  return (pts ?? [])
+    .filter((p): p is { x: number; value: number } => typeof p.x === 'number')
+    .map((p) => ({ x: p.x, value: p.value }))
+}
+
 function compareMoment(got: number | number[], want: number | number[], track: (g: number, w: number) => void) {
   const gs = Array.isArray(got) ? got : [got]
   const ws = Array.isArray(want) ? want : [want]

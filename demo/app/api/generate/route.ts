@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server'
 // Services
 import { ClaudeError, completeStream, modelId, parseFiles } from '@/lib/claude'
+import { COMPACT_SCHEMA_JSON, COMPACT_SPEC_MD } from '@/lib/live-prompts'
 import { loadCanonicalSpec } from '@/lib/pipeline-data'
 // Types
 import type { GenerateRequest } from '@/types/pipeline'
@@ -37,7 +38,9 @@ export async function POST(req: Request) {
   if (body.stage !== 'spec' && body.stage !== 'impl') {
     return NextResponse.json({ error: 'stage must be "spec" or "impl"' }, { status: 400 })
   }
-  if (body.stage === 'impl' && !body.language) {
+  // Compact (live demo) impl generates one JavaScript engine, so it needs no language; the canonical
+  // multi-language path still does.
+  if (body.stage === 'impl' && !body.compact && !body.language) {
     return NextResponse.json({ error: 'language is required for stage "impl"' }, { status: 400 })
   }
   if (!body.prompt?.trim()) {
@@ -50,12 +53,17 @@ export async function POST(req: Request) {
     )
   }
 
-  // For an implementation, attach the canonical machine-readable spec exactly as the CLI does.
+  // For an implementation, attach the machine-readable spec (compact in demo mode, canonical
+  // otherwise) and substitute the chosen language for the {{LANGUAGE}} placeholder the prompt carries.
   let prompt = body.prompt
   if (body.stage === 'impl') {
-    const { schema, specMd } = loadCanonicalSpec()
+    const { schema, specMd } = body.compact
+      ? { schema: COMPACT_SCHEMA_JSON, specMd: COMPACT_SPEC_MD }
+      : loadCanonicalSpec()
+    // The canonical prompt carries a {{LANGUAGE}} placeholder; the compact (JS engine) one does not.
+    const base = body.compact ? body.prompt : body.prompt.replaceAll('{{LANGUAGE}}', body.language as string)
     prompt =
-      `${body.prompt}\n\n` +
+      `${base}\n\n` +
       `--- ATTACHMENT: rv.schema.json ---\n\`\`\`json\n${schema}\n\`\`\`\n\n` +
       `--- ATTACHMENT: SPEC.md ---\n\`\`\`markdown\n${specMd}\n\`\`\`\n`
   }

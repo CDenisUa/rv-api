@@ -11,7 +11,9 @@ import type { GenerateEvent, GenerateStage, Language, Usage } from '@/types/pipe
 
 // Rough output sizes (characters) per stage, used only to give the bar a sense of progress. The bar
 // is clamped below 100% until the real `done` event lands, so it never claims to be finished early.
-const SOFT_TARGET_CHARS: Record<GenerateStage, number> = { spec: 45_000, impl: 50_000 }
+// These track the compact live prompts (a minimal spec + a single-file impl), not the full canonical
+// artifacts, so the bar reflects the actual demo generation.
+const SOFT_TARGET_CHARS: Record<GenerateStage, number> = { spec: 6_000, impl: 5_000 }
 
 export type GenStatus = 'idle' | 'running' | 'done' | 'error'
 
@@ -47,6 +49,7 @@ interface RunBody {
   stage: GenerateStage
   prompt: string
   language?: Language
+  compact?: boolean
 }
 
 export function useGeneration() {

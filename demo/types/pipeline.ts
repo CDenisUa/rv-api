@@ -12,6 +12,11 @@ export interface GenerateRequest {
   prompt: string
   /** Required when stage === 'impl'. */
   language?: Language
+  /**
+   * Compact demo mode: attach the small spec (not the full canonical one) for `impl`, so a live
+   * generation finishes in seconds. The committed canonical artifacts are unaffected.
+   */
+  compact?: boolean
 }
 
 export interface GenerateResponse {

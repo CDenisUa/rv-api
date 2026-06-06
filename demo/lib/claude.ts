@@ -19,7 +19,10 @@ export interface GenResult {
 type RawClaudeEvent = Record<string, unknown>
 
 // Consts
-const DEFAULT_MODEL = 'sonnet'
+// Haiku keeps the live demo snappy (a compact spec/impl finishes in seconds). Override with RVX_MODEL
+// for a higher-quality but slower run. The canonical artifacts in generated/ are produced separately
+// by pipeline/run.py and are not affected by this default.
+const DEFAULT_MODEL = 'haiku'
 const TIMEOUT_MS = 15 * 60 * 1000
 const PROGRESS_THROTTLE_MS = 120
 
@@ -68,7 +71,12 @@ export function completeStream(
       // stream-json (+ --verbose, which the CLI requires for it) emits one JSON event per line:
       // content_block_delta carries text chunks; the final `result` carries usage/cost/duration.
       // --append-system-prompt pins the output contract so the reply is parseable file blocks only.
-      ['-p', '--tools', '', '--output-format', 'stream-json', '--include-partial-messages', '--verbose',
+      // --strict-mcp-config + an empty --mcp-config loads NO MCP servers: without this, any MCP
+      // servers configured on the machine (e.g. Google Drive) leak in as tools that --tools ""
+      // does not strip, so the model "writes a file" via an MCP tool, hits a permission denial, and
+      // asks a clarifying question instead of emitting <<<FILE: ...>>> blocks - the generation hangs.
+      ['-p', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}',
+        '--output-format', 'stream-json', '--include-partial-messages', '--verbose',
         '--append-system-prompt', SYSTEM_PROMPT, '--model', modelId()],
       { stdio: ['pipe', 'pipe', 'pipe'] },
     )

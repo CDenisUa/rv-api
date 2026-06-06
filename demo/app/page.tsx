@@ -8,6 +8,8 @@ import { Footer } from '@/components/Footer'
 import { PipelineStudio } from '@/components/PipelineStudio'
 // Services
 import { liveAvailable } from '@/lib/claude'
+import { loadLiveProofCases } from '@/lib/conformance'
+import { LIVE_IMPL_PROMPT, LIVE_SPEC_PROMPT } from '@/lib/live-prompts'
 import { loadCanonicalImpl, loadCanonicalSpec, loadPrompts } from '@/lib/pipeline-data'
 // Types
 import type { Language } from '@/types/pipeline'
@@ -47,10 +49,12 @@ export default function Page() {
 
         <PipelineStudio
           prompts={prompts}
+          livePrompts={{ spec: LIVE_SPEC_PROMPT, impl: LIVE_IMPL_PROMPT }}
           canonicalSpec={canonicalSpec}
           canonicalImpl={canonicalImpl}
           liveAvailable={liveAvailable()}
           proofSlot={<ConformancePanel />}
+          liveProofCases={loadLiveProofCases()}
         />
       </main>
       <Footer />

@@ -50,8 +50,8 @@ cargo test                 # conformance + property tests
 cargo bench                # criterion benchmarks (hot paths)
 ```
 
-- `tests/conformance.rs` - runs the full language-neutral suite in `../../conformance/`. Each case is
-  validated against the canonical JSON Schema (`spec/rv.schema.json`) with the `jsonschema` crate,
+- `tests/conformance.rs` - runs the full language-neutral suite in the repo-root `conformance/`.
+  Each case is validated against the canonical JSON Schema (`generated/spec/rv.schema.json`) with the `jsonschema` crate,
   independently of the crate's serde door. Deterministic outputs (`log_prob`, `cdf`, analytic
   `moments`) match golden within `1e-9`; sampling is checked statistically (KS vs the case's own CDF
   + moment tolerances).

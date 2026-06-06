@@ -50,8 +50,9 @@ npm test            # vitest run
 npm run typecheck   # tsc --noEmit
 ```
 
-- `tests/conformance.test.ts` - runs the full language-neutral suite in `../../conformance/`. Each
-  case is validated against the canonical JSON Schema (`spec/rv.schema.json`) with **ajv**,
+- `tests/conformance.test.ts` - runs the full language-neutral suite in the repo-root
+  `conformance/`. Each case is validated against the canonical JSON Schema
+  (`generated/spec/rv.schema.json`) with **ajv**,
   independently of the library's own Zod door. Deterministic outputs (`log_prob`, `cdf`, analytic
   `moments`) match golden within `1e-9`; sampling is checked statistically (KS vs the case's own CDF
   + moment tolerances).
