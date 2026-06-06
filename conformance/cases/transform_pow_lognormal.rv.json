@@ -1,0 +1,28 @@
+{
+  "format_version": "1.0.0",
+  "metadata": {
+    "name": "transform_pow_lognormal"
+  },
+  "rv": {
+    "base": {
+      "dist": "lognormal",
+      "kind": "leaf",
+      "params": {
+        "mu": 0.0,
+        "sigma": 1.0
+      }
+    },
+    "capabilities": {
+      "can_cdf": true,
+      "can_log_prob": true,
+      "can_sample": true
+    },
+    "kind": "transform",
+    "op": {
+      "name": "pow",
+      "params": {
+        "exponent": 2.0
+      }
+    }
+  }
+}

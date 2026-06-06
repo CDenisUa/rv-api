@@ -1,0 +1,62 @@
+{
+  "capabilities": {
+    "can_cdf": true,
+    "can_log_prob": true,
+    "can_sample": true
+  },
+  "case": "transform_log_lognormal",
+  "cdf": [
+    {
+      "value": 0.022750131948179198,
+      "x": -2.0
+    },
+    {
+      "value": 0.15865525393145707,
+      "x": -1.0
+    },
+    {
+      "value": 0.5,
+      "x": 0.0
+    },
+    {
+      "value": 0.8413447460685429,
+      "x": 1.0
+    },
+    {
+      "value": 0.9772498680518208,
+      "x": 2.0
+    }
+  ],
+  "format_version": "1.0.0",
+  "kind": "transform",
+  "log_prob": [
+    {
+      "value": -2.9189385332046727,
+      "x": -2.0
+    },
+    {
+      "value": -1.4189385332046727,
+      "x": -1.0
+    },
+    {
+      "value": -0.9189385332046727,
+      "x": 0.0
+    },
+    {
+      "value": -1.4189385332046727,
+      "x": 1.0
+    },
+    {
+      "value": -2.9189385332046722,
+      "x": 2.0
+    }
+  ],
+  "moments": null,
+  "sampling": {
+    "ks_stat_max": 0.02,
+    "mean_atol": 0.05,
+    "n": 200000,
+    "seed": 12345,
+    "var_rtol": 0.05
+  }
+}

@@ -113,6 +113,20 @@
       "name": "transform_abs_normal"
     },
     {
+      "case": "cases/transform_log_lognormal.rv.json",
+      "description": "Y = log(X), X~Lognormal(0,1). Invertible; equals N(0,1).",
+      "golden": "golden/transform_log_lognormal.json",
+      "kind": "transform",
+      "name": "transform_log_lognormal"
+    },
+    {
+      "case": "cases/transform_pow_lognormal.rv.json",
+      "description": "Y = X^2, X~Lognormal(0,1). Invertible monotone on positive support.",
+      "golden": "golden/transform_pow_lognormal.json",
+      "kind": "transform",
+      "name": "transform_pow_lognormal"
+    },
+    {
       "case": "cases/nested_mixture_transform.rv.json",
       "description": "Depth-2 nesting: 0.6*N(0,1) + 0.4*exp(N(0,1)). Exercises recursion through mixture and transform.",
       "golden": "golden/nested_mixture_transform.json",
