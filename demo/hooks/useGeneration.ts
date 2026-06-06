@@ -116,6 +116,10 @@ export function useGeneration() {
                   ? { ...s, chars: ev.chars, progress: Math.min(95, (ev.chars / target) * 100) }
                   : s,
               )
+            } else if (ev.type === 'usage') {
+              setState((s) =>
+                s.status === 'running' ? { ...s, usage: ev.usage, costUsd: ev.costUsd } : s,
+              )
             } else if (ev.type === 'snapshot') {
               setState((s) =>
                 s.status === 'running' || s.status === 'done' ? { ...s, liveText: ev.text } : s,

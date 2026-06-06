@@ -47,7 +47,19 @@ export function GenerationProgress({ state }: { state: GenState }) {
         {running ? (
           <>
             <Metric label="streamed" value={`${state.chars.toLocaleString()} chars`} />
-            <Metric label="~tokens" value={estTokens.toLocaleString()} />
+            {state.usage ? (
+              // Real token counts as the CLI reports them: input/cache up front, output growing live.
+              <>
+                <Metric label="in" value={`${state.usage.input.toLocaleString()} tok`} />
+                <Metric label="out" value={`${state.usage.output.toLocaleString()} tok`} />
+                {!!state.usage.cacheRead && (
+                  <Metric label="cache" value={`${state.usage.cacheRead.toLocaleString()} tok`} />
+                )}
+                <Metric label="≈cost" value={`$${(state.costUsd ?? 0).toFixed(4)}`} />
+              </>
+            ) : (
+              <Metric label="~tokens" value={estTokens.toLocaleString()} />
+            )}
             <span className="text-slate-500">generating…</span>
           </>
         ) : (

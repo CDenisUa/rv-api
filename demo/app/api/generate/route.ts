@@ -5,7 +5,7 @@
 // Core
 import { NextResponse } from 'next/server'
 // Services
-import { ClaudeError, completeStream, modelId, parseFiles } from '@/lib/claude'
+import { ClaudeError, completeStream, estimateCostUsd, modelId, parseFiles } from '@/lib/claude'
 import { COMPACT_SCHEMA_JSON } from '@/lib/live-prompts'
 import { loadCanonicalSpec } from '@/lib/pipeline-data'
 // Types
@@ -88,6 +88,7 @@ export async function POST(req: Request) {
           prompt,
           (chars) => send({ type: 'progress', chars }),
           (text) => send({ type: 'snapshot', text }),
+          (usage) => send({ type: 'usage', usage, costUsd: estimateCostUsd(usage) }),
         )
         const files = parseFiles(result.text)
         if (Object.keys(files).length === 0) {

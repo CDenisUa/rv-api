@@ -41,6 +41,36 @@ export function modelId(): string {
   return process.env.RVX_MODEL || DEFAULT_MODEL
 }
 
+// Per-million-token USD prices for the LIVE running estimate only. The exact cost still comes from the
+// CLI's final `result` event (`total_cost_usd`); this table just powers the live counter while the
+// generation streams, since the CLI reports cost only at the end. cacheRead = 0.1x input and
+// cacheCreate (5-min TTL) = 1.25x input are the standard Anthropic prompt-cache economics.
+const PRICING_PER_MTOK: Record<string, { input: number; output: number; cacheRead: number; cacheCreate: number }> = {
+  haiku: { input: 1, output: 5, cacheRead: 0.1, cacheCreate: 1.25 },
+  sonnet: { input: 3, output: 15, cacheRead: 0.3, cacheCreate: 3.75 },
+  opus: { input: 5, output: 25, cacheRead: 0.5, cacheCreate: 6.25 },
+}
+
+function priceFor(model: string): (typeof PRICING_PER_MTOK)[string] {
+  const m = model.toLowerCase()
+  if (m.includes('opus')) return PRICING_PER_MTOK.opus
+  if (m.includes('sonnet')) return PRICING_PER_MTOK.sonnet
+  return PRICING_PER_MTOK.haiku // default model is Haiku
+}
+
+/** Approximate running cost (USD) from token counts. Used only for the live counter; the final cost is
+ *  the exact `total_cost_usd` the CLI returns on completion. */
+export function estimateCostUsd(usage: Usage, model: string = modelId()): number {
+  const p = priceFor(model)
+  return (
+    (usage.input * p.input +
+      usage.output * p.output +
+      usage.cacheRead * p.cacheRead +
+      usage.cacheCreate * p.cacheCreate) /
+    1_000_000
+  )
+}
+
 let cachedAvailable: boolean | null = null
 
 /** True when the `claude` CLI is installed and responsive, so live generation can run here. */
@@ -57,13 +87,16 @@ export function liveAvailable(): boolean {
 
 /**
  * Feed a prompt to the headless Claude Code CLI and stream its progress. `onProgress` is called
- * (throttled) with the running character count as text arrives; the resolved value carries the full
- * text plus the exact token usage, cost and duration from the final `result` event.
+ * (throttled) with the running character count as text arrives; `onUsage` is called (throttled) with
+ * the running token usage as the CLI reports it (`message_start` gives input/cache tokens up front,
+ * `message_delta` grows `output` as generation proceeds). The resolved value carries the full text
+ * plus the exact token usage, cost and duration from the final `result` event.
  */
 export function completeStream(
   prompt: string,
   onProgress: (chars: number) => void,
   onSnapshot: (text: string) => void,
+  onUsage: (usage: Usage) => void,
 ): Promise<GenResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(
@@ -86,7 +119,9 @@ export function completeStream(
     let err = ''
     let result: GenResult | null = null
     let lastEmit = 0
+    let lastUsageEmit = 0
     let settled = false
+    const usage: Usage = { input: 0, output: 0, cacheRead: 0, cacheCreate: 0 }
     const timer = setTimeout(() => {
       child.kill('SIGKILL')
       rejectOnce(new ClaudeError('claude CLI timed out'))
@@ -117,10 +152,25 @@ export function completeStream(
         return
       }
       if (o.type === 'stream_event') {
-        const ev = o.event as { type?: string; delta?: { text?: string } } | undefined
+        const ev = o.event as
+          | {
+              type?: string
+              delta?: { text?: string }
+              usage?: Record<string, number>
+              message?: { usage?: Record<string, number> }
+            }
+          | undefined
         if (ev?.type === 'content_block_delta' && typeof ev.delta?.text === 'string') {
           text += ev.delta.text
           emitProgress()
+        } else if (ev?.type === 'message_start' && ev.message?.usage) {
+          // Input + cache tokens are known up front, before any output streams.
+          applyUsage(ev.message.usage)
+          emitUsage(true)
+        } else if (ev?.type === 'message_delta' && ev.usage) {
+          // Cumulative output_tokens grows as the model generates.
+          applyUsage(ev.usage)
+          emitUsage()
         }
       } else if (o.type === 'assistant') {
         // Claude Code stream-json emits assistant messages; with --include-partial-messages these
@@ -158,6 +208,23 @@ export function completeStream(
         lastEmit = now
         onProgress(text.length)
         onSnapshot(text)
+      }
+    }
+
+    function applyUsage(u: Record<string, number>) {
+      // Each event reports the latest known totals; keep the max so a sparse delta never lowers a count.
+      if (typeof u.input_tokens === 'number') usage.input = Math.max(usage.input, u.input_tokens)
+      if (typeof u.output_tokens === 'number') usage.output = Math.max(usage.output, u.output_tokens)
+      if (typeof u.cache_read_input_tokens === 'number') usage.cacheRead = Math.max(usage.cacheRead, u.cache_read_input_tokens)
+      if (typeof u.cache_creation_input_tokens === 'number') usage.cacheCreate = Math.max(usage.cacheCreate, u.cache_creation_input_tokens)
+    }
+
+    function emitUsage(force = false) {
+      if (settled) return
+      const now = Date.now()
+      if (force || now - lastUsageEmit > PROGRESS_THROTTLE_MS) {
+        lastUsageEmit = now
+        onUsage({ ...usage })
       }
     }
 

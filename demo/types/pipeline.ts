@@ -39,6 +39,7 @@ export interface Usage {
 /** Newline-delimited events streamed from /api/generate during a live run. */
 export type GenerateEvent =
   | { type: 'progress'; chars: number }
+  | { type: 'usage'; usage: Usage; costUsd: number }
   | { type: 'snapshot'; text: string }
   | { type: 'done'; files: Record<string, string>; model: string; usage: Usage; costUsd: number; durationMs: number }
   | { type: 'error'; message: string }
