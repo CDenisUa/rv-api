@@ -1,7 +1,7 @@
 /**
  * Structural validation with Zod - the TypeScript-native door into the model.
  *
- * This mirrors the canonical JSON Schema (spec/rv.schema.json) but in a form that yields static
+ * This mirrors the canonical JSON Schema (generated/spec/rv.schema.json) but in a form that yields static
  * types via inference, so the parser consumes a fully-typed document. The conformance suite
  * additionally checks every fixture against the canonical JSON Schema itself (with ajv), so the two
  * descriptions are kept honest against each other. Semantic rules that a schema cannot express

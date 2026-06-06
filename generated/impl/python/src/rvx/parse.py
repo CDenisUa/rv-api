@@ -1,6 +1,6 @@
 """Document <-> model conversion plus semantic validation (SPEC.md §6.2).
 
-Schema validation (against spec/rv.schema.json) is the consumer's first stage and can be done with
+Schema validation (against generated/spec/rv.schema.json) is the consumer's first stage and can be done with
 any JSON Schema validator; this module performs the *semantic* stage: weight/alignment rules,
 parameter sanity, and capability re-validation (declared MUST equal recomputed).
 """

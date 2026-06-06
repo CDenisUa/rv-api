@@ -1,12 +1,12 @@
 // Live generation endpoint. Runs server-side and shells out to the local Claude Code CLI. It mirrors
-// pipeline/run.py: Prompt #1 -> spec; Prompt #2 (+ the canonical machine-readable spec attached) ->
-// one implementation. The same `<<<FILE: ...>>>` contract is parsed out of the reply.
+// pipeline/run.py: Prompt #1 -> spec; Prompt #2 (+ rv.schema.json as the only RV-format input) -> one
+// implementation. The same `<<<FILE: ...>>>` contract is parsed out of the reply.
 
 // Core
 import { NextResponse } from 'next/server'
 // Services
 import { ClaudeError, completeStream, modelId, parseFiles } from '@/lib/claude'
-import { COMPACT_SCHEMA_JSON, COMPACT_SPEC_MD } from '@/lib/live-prompts'
+import { COMPACT_SCHEMA_JSON } from '@/lib/live-prompts'
 import { loadCanonicalSpec } from '@/lib/pipeline-data'
 // Types
 import type { GenerateRequest } from '@/types/pipeline'
@@ -53,19 +53,16 @@ export async function POST(req: Request) {
     )
   }
 
-  // For an implementation, attach the machine-readable spec (compact in demo mode, canonical
+  // For an implementation, attach only the machine-readable spec (compact in demo mode, canonical
   // otherwise) and substitute the chosen language for the {{LANGUAGE}} placeholder the prompt carries.
   let prompt = body.prompt
   if (body.stage === 'impl') {
-    const { schema, specMd } = body.compact
-      ? { schema: COMPACT_SCHEMA_JSON, specMd: COMPACT_SPEC_MD }
-      : loadCanonicalSpec()
+    const { schema } = body.compact ? { schema: COMPACT_SCHEMA_JSON } : loadCanonicalSpec()
     // The canonical prompt carries a {{LANGUAGE}} placeholder; the compact (JS engine) one does not.
     const base = body.compact ? body.prompt : body.prompt.replaceAll('{{LANGUAGE}}', body.language as string)
     prompt =
       `${base}\n\n` +
-      `--- ATTACHMENT: rv.schema.json ---\n\`\`\`json\n${schema}\n\`\`\`\n\n` +
-      `--- ATTACHMENT: SPEC.md ---\n\`\`\`markdown\n${specMd}\n\`\`\`\n`
+      `--- ATTACHMENT: rv.schema.json ---\n\`\`\`json\n${schema}\n\`\`\`\n`
   }
 
   // Stream newline-delimited JSON progress events so the client can show a live timer, character

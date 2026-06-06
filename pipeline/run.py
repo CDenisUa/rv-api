@@ -7,8 +7,9 @@ This is the executable form of the two-prompt pipeline:
     Prompt #1  ──►  SPEC.md + rv.schema.json          (the spec)
     Prompt #2  ──►  reader/writer in one language      (the implementation)
 
-It feeds `prompts/01-generate-spec.md` (and, for implementations, `prompts/02-generate-impl.md`
-with the machine-readable spec attached) to the local **Claude Code** CLI in headless mode and
+It feeds `pipeline/prompts/01-generate-spec.md` (and, for implementations,
+`pipeline/prompts/02-generate-impl.md` with the machine-readable spec attached) to the local
+**Claude Code** CLI in headless mode and
 writes the model's output to disk. Claude Code runs on the machine's subscription auth, so there is
 no API key and no quota. The committed artifacts in `generated/` are the *canonical* (replay)
 outputs; this runner produces a *fresh* set on demand - the "live" half of the demo's duality.
@@ -39,7 +40,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PROMPTS = REPO_ROOT / "prompts"
+PROMPTS = REPO_ROOT / "pipeline" / "prompts"
 CANONICAL_SPEC = REPO_ROOT / "generated" / "spec"
 
 DEFAULT_MODEL = "sonnet"          # Claude Code CLI model alias
@@ -196,11 +197,9 @@ def cmd_impl(client: ClaudeCliClient, language: str, out: Path) -> None:
     print(f"Prompt #2 -> implementation ({language})")
     prompt = load_prompt("02-generate-impl.md").replace("{{LANGUAGE}}", language)
     schema = (CANONICAL_SPEC / "rv.schema.json").read_text(encoding="utf-8")
-    spec_md = (CANONICAL_SPEC / "SPEC.md").read_text(encoding="utf-8")
     attached = (
         f"{prompt}\n\n"
-        f"--- ATTACHMENT: rv.schema.json ---\n```json\n{schema}\n```\n\n"
-        f"--- ATTACHMENT: SPEC.md ---\n```markdown\n{spec_md}\n```\n"
+        f"--- ATTACHMENT: rv.schema.json ---\n```json\n{schema}\n```\n"
     )
     reply = client.complete(attached)
     files = parse_files(reply)

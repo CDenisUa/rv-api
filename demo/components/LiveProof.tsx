@@ -4,7 +4,7 @@
 // Each golden value was produced by scipy (Python) and verified by the Rust suite; here the
 // *generated JavaScript* recomputes the deterministic ones (log_prob, cdf, analytic moments) for the
 // normal/uniform leaf cases - the scope of the compact live spec - and we show the worst deviation.
-// Same 1e-9 bar as the canonical ConformancePanel, but on freshly generated code.
+// This is intentionally narrower than the canonical ConformancePanel.
 
 // Core
 import { useMemo } from 'react'
@@ -64,7 +64,7 @@ export function LiveProof({ engine, cases }: { engine: LiveEngine; cases: LivePr
   return (
     <section className="rounded-2xl bg-slate-900/40 p-4 ring-1 ring-slate-800 sm:p-6">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-semibold text-white">Your generated engine == Python == Rust</h2>
+        <h2 className="text-lg font-semibold text-white">Compact generated engine == Python == Rust</h2>
         <p className="text-sm text-slate-400">
           {results.length} cases · {total} deterministic values · worst error{' '}
           <span className="tabular-nums text-slate-200">{worst === 0 ? '0' : worst.toExponential(1)}</span>

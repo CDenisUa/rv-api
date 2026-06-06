@@ -2,7 +2,7 @@
 
 // The whole page, as one guided step-by-step pipeline:
 //   1. a prompt generates the format specification (SPEC.md + rv.schema.json)
-//   2. a short prompt + that spec generates a reader/writer in a chosen language
+//   2. a short prompt + the machine-readable spec generates a reader/writer in a chosen language
 //   3. a live demo builds random variables, serializes them and samples them
 //   4. an independent oracle proves "Python == TypeScript == Rust"
 // One step is active at a time; the stepper runs 1 → last. The proof step shows only the proof.
@@ -346,8 +346,8 @@ function ImplStep({
       title="Step 2 — Generate the engine"
       info={
         live
-          ? 'A tiny prompt, plus the spec from step 1, generates one browser-ready JavaScript engine with a fixed API. The demo and proof below run this exact code — so what Claude writes here is what gets exercised and verified next.'
-          : 'A deliberately tiny prompt, plus the machine-readable spec from step 1, produces a full reader/writer in the language you pick. The prompt carries no maths — the spec does all the work. Generate one, two, or all three languages from the same spec.'
+          ? 'A tiny prompt, plus the compact machine-readable spec from step 1, generates one browser-ready JavaScript engine with a fixed API. The demo and proof below run this exact code — so what Claude writes here is what gets exercised and verified next.'
+          : 'A deliberately tiny prompt, plus the machine-readable spec from step 1, produces a full reader/writer in the language you pick. The prompt carries no maths — the schema semantics do all the work. Generate one, two, or all three languages from the same spec.'
       }
     >
       {live ? (
@@ -423,8 +423,8 @@ function DemoStep({
       title="Step 3 — Use the format"
       info={
         live
-          ? 'Build a normal or uniform random variable. It serializes to a portable .rv.json document and is sampled and evaluated by the JavaScript engine you generated in step 2 — the very same code the proof validates next.'
-          : 'Build random variables of different kinds (a distribution, a transform of one, or a mixture). Each serializes to a portable .rv.json document and is sampled off-thread by the canonical engine — the same format the proof step validates across languages.'
+          ? 'Build a normal or uniform random variable. It serializes to a portable .rv.json document and is sampled and evaluated by the JavaScript engine you generated in step 2 — the same compact code the proof validates next.'
+          : 'Build one RV interactively, then export a mixed list of discrete and continuous RVs. The TypeScript side writes the documents and the Rust WebAssembly engine imports the same list in a worker.'
       }
     >
       {live ? (

@@ -2,7 +2,7 @@
 //!
 //! Deterministic outputs (log_prob, cdf, analytic moments) must match golden within 1e-9. Stochastic
 //! sampling is checked statistically (KS against the case's own CDF + moment tolerances). Each case
-//! is also validated against the canonical JSON Schema (spec/rv.schema.json) with the `jsonschema`
+//! is also validated against the canonical JSON Schema (generated/spec/rv.schema.json) with the `jsonschema`
 //! crate, independently of the crate's own serde door - proving the fixtures and the contract agree.
 
 mod common;

@@ -1,4 +1,4 @@
-// Server-only loaders for the pipeline screen. They read the committed prompts and the canonical
+// Server-only loaders for the pipeline screen. They read the committed pipeline prompts and canonical
 // (replay) artifacts straight from the repo, so the screen can show the exact same inputs/outputs the
 // CLI runner uses - no network, fully deterministic.
 
@@ -34,8 +34,8 @@ const SRC_EXT: Record<Language, RegExp> = {
 
 export function loadPrompts(): PipelinePrompts {
   return {
-    spec: read('prompts/01-generate-spec.md'),
-    impl: read('prompts/02-generate-impl.md'),
+    spec: read('pipeline/prompts/01-generate-spec.md'),
+    impl: read('pipeline/prompts/02-generate-impl.md'),
   }
 }
 

@@ -1,12 +1,12 @@
 # Pipeline - the two-prompt generator
 
-This directory turns the prompts in [`../prompts/`](../prompts/) into artifacts by feeding them to an
+This directory turns the prompts in [`./prompts/`](./prompts/) into artifacts by feeding them to an
 LLM. It is the **executable** form of the project's thesis:
 
 ```
-prompts/01-generate-spec.md  ──LLM──►  SPEC.md + rv.schema.json          (the contract)
-prompts/02-generate-impl.md  ──LLM──►  reader/writer in <language>        (one implementation)
-   + the machine-readable spec attached
+pipeline/prompts/01-generate-spec.md  ──LLM──►  SPEC.md + rv.schema.json          (the contract)
+pipeline/prompts/02-generate-impl.md  ──LLM──►  reader/writer in <language>        (one implementation)
+   + rv.schema.json attached as the only RV-format input
 ```
 
 ## Live vs replay
@@ -19,8 +19,9 @@ prompts/02-generate-impl.md  ──LLM──►  reader/writer in <language>    
   your subscription auth, so there is **no API key and no quota**. The web demo exposes the same
   live/replay duality (its `/api/generate` route shells out to the same CLI).
 
-The independent oracle is the same in both modes: whatever is produced must reproduce the golden
-values within `1e-9`, so a live generation is only "done" once it passes conformance.
+The independent oracle is the same in both modes: canonical outputs must reproduce the golden values
+within `1e-9`; the web Live mode uses a compact normal/uniform subset for fast interactive generation
+and labels that proof separately.
 
 ## Usage
 

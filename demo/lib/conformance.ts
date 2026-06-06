@@ -80,7 +80,8 @@ function check(entry: ManifestEntry): CrossCheck {
 // The frozen golden cases a generated engine can be checked against in the browser: only the leaf
 // `normal`/`uniform` cases, since that is the scope of the compact live spec. Each carries the
 // normalized compact document (canonical extras like `capabilities` stripped) plus the scalar golden
-// values, so the client can run the just-generated engine over them and compare within 1e-9.
+// values, so the client can run the just-generated compact engine over them. LiveProof owns its looser
+// browser-generated tolerance; canonical replay remains at 1e-9.
 
 export interface LiveProofPoint {
   x: number

@@ -3,6 +3,7 @@
 // Core
 import { useMemo, useState } from 'react'
 // Components
+import { BatchDemo } from '@/components/BatchDemo'
 import { CapabilitiesBadges } from '@/components/CapabilitiesBadges'
 import { Histogram } from '@/components/Histogram'
 import { JsonPreview } from '@/components/JsonPreview'
@@ -67,83 +68,86 @@ export function Studio() {
   }, [analysis, range])
 
   return (
-    <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
-      <section className="rounded-2xl bg-slate-900/40 p-4 ring-1 ring-slate-800 sm:p-6">
-        <h2 className="mb-4 text-lg font-semibold text-white">Build a random variable</h2>
-        <RvBuilder state={state} setState={setState} />
-        <div className="mt-6">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Portable document (.rv.json)
-          </h3>
-          <JsonPreview value={doc} />
-        </div>
-      </section>
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
+        <section className="rounded-2xl bg-slate-900/40 p-4 ring-1 ring-slate-800 sm:p-6">
+          <h2 className="mb-4 text-lg font-semibold text-white">Build a random variable</h2>
+          <RvBuilder state={state} setState={setState} />
+          <div className="mt-6">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Portable document (.rv.json)
+            </h3>
+            <JsonPreview value={doc} />
+          </div>
+        </section>
 
-      <section className="space-y-5 rounded-2xl bg-slate-900/40 p-4 ring-1 ring-slate-800 sm:p-6">
-        {analysis.error ? (
-          <Banner tone="error">Invalid document: {analysis.error}</Banner>
-        ) : (
-          <>
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-              <CapabilitiesBadges capabilities={analysis.caps!} />
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <div className="inline-flex rounded-md bg-slate-800 p-0.5 ring-1 ring-slate-700" title="Sample with the TypeScript reference or the Rust core compiled to WebAssembly">
-                  {(['ts', 'wasm'] as Engine[]).map((eng) => (
-                    <button
-                      key={eng}
-                      onClick={() => setEngine(eng)}
-                      className={`rounded px-2.5 py-1 text-xs font-medium transition ${
-                        engine === eng ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      {eng === 'ts' ? 'TypeScript' : 'Rust · WASM'}
-                    </button>
-                  ))}
+        <section className="space-y-5 rounded-2xl bg-slate-900/40 p-4 ring-1 ring-slate-800 sm:p-6">
+          {analysis.error ? (
+            <Banner tone="error">Invalid document: {analysis.error}</Banner>
+          ) : (
+            <>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <CapabilitiesBadges capabilities={analysis.caps!} />
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <div className="inline-flex rounded-md bg-slate-800 p-0.5 ring-1 ring-slate-700" title="Sample with the TypeScript reference or the Rust core compiled to WebAssembly">
+                    {(['ts', 'wasm'] as Engine[]).map((eng) => (
+                      <button
+                        key={eng}
+                        onClick={() => setEngine(eng)}
+                        className={`rounded px-2.5 py-1 text-xs font-medium transition ${
+                          engine === eng ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        {eng === 'ts' ? 'TypeScript' : 'Rust · WASM'}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="text-slate-400">n</label>
+                  <select
+                    value={n}
+                    onChange={(e) => setN(Number(e.target.value))}
+                    className="rounded-md bg-slate-800 px-2 py-1 text-slate-100 ring-1 ring-slate-700"
+                  >
+                    {SAMPLE_SIZES.map((s) => (
+                      <option key={s} value={s}>
+                        {s.toLocaleString()}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setSeed((s) => s + 1)}
+                    className="rounded-md bg-slate-800 px-3 py-1 text-slate-200 ring-1 ring-slate-700 hover:bg-slate-700"
+                  >
+                    reshuffle
+                  </button>
                 </div>
-                <label className="text-slate-400">n</label>
-                <select
-                  value={n}
-                  onChange={(e) => setN(Number(e.target.value))}
-                  className="rounded-md bg-slate-800 px-2 py-1 text-slate-100 ring-1 ring-slate-700"
-                >
-                  {SAMPLE_SIZES.map((s) => (
-                    <option key={s} value={s}>
-                      {s.toLocaleString()}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => setSeed((s) => s + 1)}
-                  className="rounded-md bg-slate-800 px-3 py-1 text-slate-200 ring-1 ring-slate-700 hover:bg-slate-700"
-                >
-                  reshuffle
-                </button>
               </div>
-            </div>
 
-            {sampleError ? (
-              <Banner tone="error">Sampling failed: {sampleError}</Banner>
-            ) : (
-              <div className={loading ? 'opacity-60 transition' : 'transition'}>
-                <Histogram bins={bins} curve={densityCurve} range={range} />
+              {sampleError ? (
+                <Banner tone="error">Sampling failed: {sampleError}</Banner>
+              ) : (
+                <div className={loading ? 'opacity-60 transition' : 'transition'}>
+                  <Histogram bins={bins} curve={densityCurve} range={range} />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Stat label="sample mean" value={fmt(mean)} />
+                <Stat label="sample var" value={fmt(variance)} />
+                <Stat label="analytic mean" value={analysis.moments ? fmtMoment(analysis.moments.mean) : '-'} />
+                <Stat label="analytic var" value={analysis.moments ? fmtMoment(analysis.moments.variance) : '-'} />
               </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Stat label="sample mean" value={fmt(mean)} />
-              <Stat label="sample var" value={fmt(variance)} />
-              <Stat label="analytic mean" value={analysis.moments ? fmtMoment(analysis.moments.mean) : '-'} />
-              <Stat label="analytic var" value={analysis.moments ? fmtMoment(analysis.moments.variance) : '-'} />
-            </div>
-            <p className="text-xs text-slate-500">
-              Histogram drawn from {n.toLocaleString()} samples in a Web Worker (seed {seed}) by the{' '}
-              <span className="text-slate-300">{engine === 'wasm' ? 'Rust core (WebAssembly)' : 'TypeScript engine'}</span>.
-              The amber curve is the analytic density from the TypeScript engine
-              {analysis.caps?.can_log_prob ? ' - switch engines and the histogram is unchanged.' : ' - unavailable for this RV, so only the histogram is shown.'}
-            </p>
-          </>
-        )}
-      </section>
+              <p className="text-xs text-slate-500">
+                Histogram drawn from {n.toLocaleString()} samples in a Web Worker (seed {seed}) by the{' '}
+                <span className="text-slate-300">{engine === 'wasm' ? 'Rust core (WebAssembly)' : 'TypeScript engine'}</span>.
+                The amber curve is the analytic density from the TypeScript engine
+                {analysis.caps?.can_log_prob ? ' - switch engines and the histogram is unchanged.' : ' - unavailable for this RV, so only the histogram is shown.'}
+              </p>
+            </>
+          )}
+        </section>
+      </div>
+      <BatchDemo />
     </div>
   )
 }

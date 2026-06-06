@@ -1,5 +1,5 @@
 // Compact prompts + attachment for LIVE mode only. The committed canonical artifacts (and Replay
-// mode) still come from the full prompts in ../../prompts and pipeline/run.py - those are untouched.
+// mode) still come from the full prompts in ../../pipeline/prompts and pipeline/run.py.
 //
 // Live is a real generate -> demonstrate -> prove loop: step 1 writes a minimal-but-real spec (two
 // leaf distributions, the same `mu/sigma` and `low/high` parameterization the canonical conformance
@@ -21,8 +21,8 @@ export const ENGINE_EXPORTS = [
   'toCanonical',
 ] as const
 
-// The compact spec we ask the model to produce in step 1, and attach to step 2's prompt. Keeping it
-// here (rather than in a file) means it ships with the bundle and needs no file tracing.
+// The compact spec we ask the model to produce in step 1. Step 2 receives only COMPACT_SCHEMA_JSON;
+// its `x-rvx-semantics` block carries the formulas the generated engine needs.
 export const COMPACT_SPEC_MD = `# RV Exchange Format (minimal) - SPEC.md
 
 A portable JSON serialization of a single continuous random variable, so one system can write it and
@@ -40,7 +40,7 @@ A document is a JSON object:
 - \`normal\` - \`params: { "mu": number, "sigma": number }\`, the mean and standard deviation, \`sigma > 0\`.
 - \`uniform\` - \`params: { "low": number, "high": number }\`, with \`high > low\`.
 
-A reader MAY ignore any extra non-semantic fields on a node (e.g. a \`capabilities\` hint).
+The leaf node has exactly the fields \`kind\`, \`dist\`, and \`params\`; unknown node fields are invalid.
 
 ## Operations (every reader MUST provide all three)
 Let \`x\` be a real number. \`log_prob\` is given in log-space.
@@ -72,6 +72,39 @@ export const COMPACT_SCHEMA_JSON = `{
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://materials.example/rv.schema.json",
   "title": "RV Exchange Format (minimal)",
+  "x-rvx-semantics": {
+    "contract": "Machine-readable hand-off for the compact live demo. JSON Schema defines structure; this object defines semantics.",
+    "versioning": { "implemented_major": 1, "reject_if_format_major_exceeds": 1 },
+    "canonical_json": { "object_keys": "sort lexicographically", "numbers": "shortest round-trippable", "roundtrip": "read -> write -> read -> write is byte-stable" },
+    "operations": {
+      "validate": "Reject unknown kind/dist, missing params, sigma <= 0, high <= low, and format_version MAJOR > 1.",
+      "logProb": "Natural log density at scalar x.",
+      "cdf": "Cumulative probability P(X <= x).",
+      "sample": "Deterministic seeded sampling.",
+      "mean": "Analytic mean.",
+      "variance": "Analytic variance."
+    },
+    "leaf_distributions": {
+      "normal": {
+        "params": ["mu", "sigma"],
+        "constraints": ["sigma > 0"],
+        "logProb": "-0.5*((x-mu)/sigma)^2 - log(sigma) - 0.5*log(2*pi)",
+        "cdf": "0.5*(1 + erf((x-mu)/(sigma*sqrt(2))))",
+        "sample": "mu + sigma * standard_normal(seed)",
+        "mean": "mu",
+        "variance": "sigma^2"
+      },
+      "uniform": {
+        "params": ["low", "high"],
+        "constraints": ["high > low"],
+        "logProb": "-log(high-low) if low <= x <= high else -Infinity",
+        "cdf": "0 below low, (x-low)/(high-low) on [low,high], 1 above high",
+        "sample": "low + (high-low)*u(seed)",
+        "mean": "(low+high)/2",
+        "variance": "(high-low)^2/12"
+      }
+    }
+  },
   "type": "object",
   "additionalProperties": false,
   "required": ["format_version", "rv"],
@@ -84,6 +117,7 @@ export const COMPACT_SCHEMA_JSON = `{
     "leaf": {
       "type": "object",
       "required": ["kind", "dist", "params"],
+      "additionalProperties": false,
       "properties": {
         "kind": { "const": "leaf" },
         "dist": { "enum": ["normal", "uniform"] },
@@ -132,7 +166,8 @@ can write it and another - possibly in a different language - can reconstruct it
 
 Return exactly two artifacts:
 1. \`SPEC.md\` - a short, self-contained specification using RFC-2119 keywords (MUST, SHOULD, MAY).
-2. \`rv.schema.json\` - a strict JSON Schema (draft 2020-12, \`additionalProperties: false\` on params).
+2. \`rv.schema.json\` - a strict JSON Schema (draft 2020-12, \`additionalProperties: false\` on fixed
+   objects) with an \`x-rvx-semantics\` object carrying the formulas for code generation.
 
 Scope - do NOT add anything beyond this:
 - Envelope: a JSON object with \`format_version\` ("1.0.0"), an OPTIONAL free-form \`metadata\`, and \`rv\`.
@@ -153,8 +188,9 @@ Keep it tight - this is a minimal teaching version, not a full format. Output ON
 // demo runs and the proof checks - so the contract (exact export names, the `doc` shape) is rigid.
 export const LIVE_IMPL_PROMPT = `# Prompt #2 (live demo) - A JavaScript engine for the format
 
-Using the attached \`rv.schema.json\` and \`SPEC.md\`, implement the minimal RV Exchange Format as a
-single **browser-ready JavaScript ES module**, in one file named \`engine.js\`.
+Using only the attached \`rv.schema.json\` (including its \`x-rvx-semantics\` block), implement the
+minimal RV Exchange Format as a single **browser-ready JavaScript ES module**, in one file named
+\`engine.js\`.
 
 The module MUST export EXACTLY these named functions (no more, no fewer), where \`doc\` is a parsed
 \`.rv.json\` object \`{ format_version, metadata?, rv: { kind: "leaf", dist, params } }\`:

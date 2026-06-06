@@ -25,12 +25,15 @@ the same mechanism that would validate an LLM-generated implementation.
 
 ```
 generated/spec/ # JSON Schema (Draft 2020-12) + human-readable SPEC.md (semantics, capabilities, Big-O)
+pipeline/
+  prompts/      # prompt #1 and prompt #2; prompt #2 receives only rv.schema.json
+  run.py        # reproducible Claude Code two-prompt runner
 conformance/   # language-neutral *.rv.json cases + golden values (the contract); generate.py
 generated/impl/
   python/      # reference "scientific producer" - scipy.stats adapter; generates the golden
   typescript/  # reference (hero) - discriminated-union ADT + never, Zod, visitor, alias method
   rust/        # systems core - enum ADT, serde, criterion benches; compiles to WebAssembly
-demo/          # Next.js dashboard: build an RV, sample it live, see Python == TS == Rust
+demo/          # Next.js dashboard: single RV studio + batch export/import + live compact generation
 evidence/      # EVIDENCE.md - generated cross-language conformance matrix, timings, Big-O
 ```
 
@@ -39,6 +42,8 @@ evidence/      # EVIDENCE.md - generated cross-language conformance matrix, timi
 - **Empirical `bulk_ref` transport** - all three references decode the mandatory inline `base64`
   transport. The `.npy` sidecar is an optional transport (SPEC §8.5): the Python reference reads it;
   the TypeScript and Rust references reject `npy` with an explicit error rather than misread it.
+- **Machine-readable hand-off** - `generated/spec/rv.schema.json` is not just structural JSON Schema;
+  it also carries `x-rvx-semantics`, the machine-readable semantic extension used by Prompt #2.
 - **Format version** - each reference rejects a document whose `format_version` MAJOR exceeds the
   version it implements (SPEC §9), so a future breaking revision can never be silently misinterpreted.
 
@@ -47,9 +52,14 @@ evidence/      # EVIDENCE.md - generated cross-language conformance matrix, timi
 All milestones complete and green:
 
 - **M0** spec · **M1** conformance suite (17 cases) · **M2** Python · **M3** TypeScript · **M4** Rust → WASM ·
-  **M5** Next.js demo · **M6** evidence pack.
+  **M5** Next.js demo · **M6** evidence pack · **M7** tracked two-prompt pipeline.
 - The same `.rv.json` reproduces to the same numbers in all three languages within **1e-9** - see
   [`evidence/EVIDENCE.md`](evidence/EVIDENCE.md).
+- The demo includes the formal task flow: TypeScript/React writes a list of discrete and continuous
+  RV documents, exports it as `.rv-list.json`, and Rust/WASM imports and samples the same documents.
+- The web **Live** mode is intentionally compact (`normal`/`uniform`, generated JavaScript) so it can
+  stream in seconds. The full canonical path remains Python + TypeScript + Rust through
+  `pipeline/run.py` and the conformance suite.
 
 ## Getting started
 

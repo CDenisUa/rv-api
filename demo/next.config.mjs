@@ -26,15 +26,15 @@ loadRootEnv()
 const nextConfig = {
   // `rvx` ships raw TypeScript (no build step); let Next transpile it.
   transpilePackages: ['rvx'],
-  // The package symlink and the server-side reads of ../conformance, ../generated, ../prompts resolve
-  // outside the app dir.
+  // The package symlink and the server-side reads of ../conformance, ../generated, ../pipeline/prompts
+  // resolve outside the app dir.
   experimental: { externalDir: true },
   // Vercel traces only files it sees imported; our server code reads sibling dirs via fs string paths,
   // so we must include them explicitly in the serverless bundle.
   outputFileTracingRoot: REPO_ROOT,
   outputFileTracingIncludes: {
-    '/': ['../prompts/**', '../generated/spec/**', '../generated/impl/**'],
-    '/api/generate': ['../generated/spec/**', '../prompts/**'],
+    '/': ['../pipeline/prompts/**', '../generated/spec/**', '../generated/impl/**'],
+    '/api/generate': ['../generated/spec/**', '../pipeline/prompts/**'],
     '/api/conformance': ['../conformance/**'],
   },
   // The Rust core (compiled to WebAssembly via wasm-pack, bundler target) is imported in the

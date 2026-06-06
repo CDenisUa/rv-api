@@ -5,7 +5,8 @@ one system can serialize it and another (possibly in a different language) can r
 operate on it. The format describes the **semantics** of an RV - what it *means* - not a
 library-specific class instance.
 
-- Machine-readable contract: [`rv.schema.json`](./rv.schema.json) (JSON Schema, draft 2020-12).
+- Machine-readable contract: [`rv.schema.json`](./rv.schema.json) (JSON Schema, draft 2020-12, plus
+  the `x-rvx-semantics` extension used as the Prompt #2 hand-off contract).
 - This document is the authoritative human-readable companion. Where prose and schema agree they are
   normative together; semantic rules that JSON Schema cannot express (weight sums, capability
   propagation, support checks) are defined here and MUST be enforced by every implementation.

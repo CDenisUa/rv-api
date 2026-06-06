@@ -30,7 +30,7 @@ export default function Page() {
           <div className="space-y-2 sm:space-y-3">
             <p className="text-xs font-medium uppercase tracking-wider text-sky-400 sm:text-sm">RV Exchange Format v1</p>
             <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
-              One random variable, three languages, one answer.
+              One RV format, three languages, one answer.
             </h1>
             <p className="max-w-3xl text-sm text-slate-400 sm:text-base">
               A prompt writes the format specification, a second short prompt turns it into a

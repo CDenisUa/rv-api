@@ -1,7 +1,8 @@
 # RV Exchange - cross-language demo (Next.js)
 
-The demo dashboard for the RV Exchange Format: build a random variable in the browser, watch it
-sampled live, and see the **same `.rv.json` evaluated identically by Python, TypeScript, and Rust**.
+The demo dashboard for the RV Exchange Format: build a random variable in the browser, export a mixed
+list of discrete and continuous RVs, import that list through Rust/WASM, and see the **same `.rv.json`
+evaluated identically by Python, TypeScript, and Rust**.
 
 ## Run locally
 
@@ -67,9 +68,15 @@ repository layout; the server component expects `../conformance` relative to `de
   worker between the **TypeScript** reference and the **Rust core compiled to WebAssembly** - same
   `.rv.json`, same histogram, two engines. Non-invertible transforms (e.g. `abs`) honestly drop
   `log_prob`/`cdf`, which the capability badges reflect.
+- **Batch export/import** - TypeScript/React writes a list of RV documents containing continuous and
+  discrete examples, exports it as `.rv-list.json`, and Rust/WASM reads and samples every item in a
+  worker.
 - **Python == TypeScript == Rust** - a **server-rendered** table that recomputes every conformance
   golden value (produced by scipy, verified by Rust) with the TypeScript engine at request time and
   shows the worst deviation per case. No client JavaScript for this proof.
+- **Live Claude mode** - a compact normal/uniform prompt flow generates a browser JavaScript engine and
+  proves that compact engine against the frozen Python/Rust golden subset. Full conformance remains the
+  Replay/canonical path.
 
 ## Architecture
 
@@ -79,7 +86,7 @@ Clean separation, server-first:
 app/            # server components: page shell, layout
 components/      # UI - Studio (client island), RvBuilder, Histogram (SVG), ConformancePanel (server), ...
 hooks/           # useSampler - debounced, latest-wins worker driver
-lib/             # pure logic: build-doc, histogram/curve binning, presets, format;
+lib/             # pure logic: build-doc, batch-docs, canonical-json, histogram/curve binning, format;
                  #   sampler.worker + worker-client (the Web Worker boundary);
                  #   conformance (server-only golden loader)
 types/           # form-state model

@@ -3,6 +3,164 @@
   "$id": "https://mcl.example/rv-exchange/v1/rv.schema.json",
   "title": "RV Exchange Format v1",
   "description": "Portable, language-neutral serialization of a random variable. The document wraps a single root RV node. An RV node is a recursive tagged union over four semantic kinds: leaf | joint | mixture | transform.",
+  "x-rvx-semantics": {
+    "contract": "This object is the machine-readable hand-off contract for implementation generation. JSON Schema keywords define structure; this x-rvx-semantics object defines the semantic rules that JSON Schema cannot express.",
+    "versioning": {
+      "implemented_major": 1,
+      "reject_if_format_major_exceeds": 1,
+      "semantic_versioning": "PATCH is editorial, MINOR is backward-compatible addition, MAJOR is breaking."
+    },
+    "tolerances": {
+      "probability_sum_abs": 1e-9,
+      "deterministic_output_abs": 1e-9
+    },
+    "canonical_json": {
+      "encoding": "utf-8",
+      "object_keys": "sort lexicographically at every object level",
+      "arrays": "preserve order",
+      "numbers": "shortest round-trippable decimal representation",
+      "roundtrip": "read -> write -> read -> write must be byte-stable"
+    },
+    "operations": {
+      "sample": "Draw n values using a deterministic seeded RNG.",
+      "log_prob": "Natural log of probability density for continuous variables or mass for discrete variables. Always compute in log-space.",
+      "cdf": "Cumulative probability P(X <= x).",
+      "moments": "Return analytic mean and variance when available; otherwise fail explicitly."
+    },
+    "capability_rules": {
+      "leaf_analytic": { "can_sample": true, "can_log_prob": true, "can_cdf": true },
+      "leaf_categorical": { "can_sample": true, "can_log_prob": true, "can_cdf": true },
+      "leaf_empirical": { "can_sample": true, "can_log_prob": true, "can_cdf": true },
+      "joint": "AND each capability over dims",
+      "mixture": "AND each capability over components",
+      "transform": {
+        "can_sample": "base.can_sample",
+        "can_log_prob": "base.can_log_prob && op.invertible",
+        "can_cdf": "base.can_cdf && op.monotone"
+      },
+      "validation": "If a node declares capabilities, consumers MUST recompute them bottom-up and reject mismatches."
+    },
+    "leaf_distributions": {
+      "normal": {
+        "params": ["mu", "sigma"],
+        "constraints": ["sigma > 0"],
+        "support": "(-inf, +inf)",
+        "log_prob": "-0.5*((x-mu)/sigma)^2 - log(sigma) - 0.5*log(2*pi)",
+        "cdf": "0.5*(1 + erf((x-mu)/(sigma*sqrt(2))))",
+        "sample": "mu + sigma * standard_normal(seed)",
+        "moments": { "mean": "mu", "variance": "sigma^2" }
+      },
+      "lognormal": {
+        "params": ["mu", "sigma"],
+        "constraints": ["sigma > 0", "x > 0 for density/CDF"],
+        "support": "(0, +inf)",
+        "meaning": "log(X) ~ Normal(mu, sigma)",
+        "log_prob": "normal_log_prob(log(x); mu, sigma) - log(x)",
+        "cdf": "normal_cdf(log(x); mu, sigma)",
+        "sample": "exp(normal(mu, sigma))",
+        "moments": { "mean": "exp(mu + sigma^2/2)", "variance": "(exp(sigma^2)-1)*exp(2*mu + sigma^2)" }
+      },
+      "weibull": {
+        "params": ["shape", "scale"],
+        "constraints": ["shape > 0", "scale > 0"],
+        "support": "[0, +inf)",
+        "log_prob": "log(shape) - log(scale) + (shape-1)*log(x/scale) - (x/scale)^shape for x >= 0, else -inf",
+        "cdf": "1 - exp(-(x/scale)^shape) for x >= 0, else 0",
+        "sample": "scale * (-log(1-u))^(1/shape)",
+        "moments": { "mean": "scale*Gamma(1+1/shape)", "variance": "scale^2*(Gamma(1+2/shape)-Gamma(1+1/shape)^2)" }
+      },
+      "uniform": {
+        "params": ["low", "high"],
+        "constraints": ["high > low"],
+        "support": "[low, high]",
+        "log_prob": "-log(high-low) inside support, else -inf",
+        "cdf": "0 below low, (x-low)/(high-low) inside support, 1 above high",
+        "sample": "low + (high-low)*u",
+        "moments": { "mean": "(low+high)/2", "variance": "(high-low)^2/12" }
+      },
+      "exponential": {
+        "params": ["rate"],
+        "constraints": ["rate > 0"],
+        "support": "[0, +inf)",
+        "log_prob": "log(rate) - rate*x for x >= 0, else -inf",
+        "cdf": "1 - exp(-rate*x) for x >= 0, else 0",
+        "sample": "-log(1-u)/rate",
+        "moments": { "mean": "1/rate", "variance": "1/rate^2" }
+      },
+      "gamma": {
+        "params": ["shape", "scale"],
+        "constraints": ["shape > 0", "scale > 0"],
+        "support": "(0, +inf)",
+        "log_prob": "(shape-1)*log(x) - x/scale - lgamma(shape) - shape*log(scale) for x > 0, else -inf",
+        "cdf": "regularized lower incomplete gamma P(shape, x/scale)",
+        "sample": "standard gamma(shape) * scale",
+        "moments": { "mean": "shape*scale", "variance": "shape*scale^2" }
+      },
+      "beta": {
+        "params": ["alpha", "beta"],
+        "constraints": ["alpha > 0", "beta > 0"],
+        "support": "[0, 1]",
+        "log_prob": "(alpha-1)*log(x) + (beta-1)*log(1-x) - (lgamma(alpha)+lgamma(beta)-lgamma(alpha+beta)) inside [0,1], else -inf",
+        "cdf": "regularized incomplete beta I_x(alpha,beta)",
+        "sample": "gamma(alpha,1)/(gamma(alpha,1)+gamma(beta,1))",
+        "moments": { "mean": "alpha/(alpha+beta)", "variance": "alpha*beta/((alpha+beta)^2*(alpha+beta+1))" }
+      },
+      "categorical": {
+        "params": ["categories", "probs"],
+        "constraints": ["same length", "non-empty", "probs >= 0", "sum(probs) == 1 within tolerance"],
+        "support": "finite numeric categories",
+        "log_prob": "log(probability for category equal to x), else -inf",
+        "cdf": "sum probabilities whose category <= x after sorting categories ascending",
+        "sample": "draw category by probability weights",
+        "moments": { "mean": "sum(categories_i*probs_i)", "variance": "sum(probs_i*(categories_i-mean)^2)" }
+      },
+      "empirical": {
+        "params": ["samples"],
+        "constraints": ["samples is a 1-D numeric bulk_ref"],
+        "support": "sample data range",
+        "log_prob": "Gaussian KDE using Scott bandwidth h = n^(-1/5)*sample_stddev",
+        "cdf": "empirical CDF",
+        "sample": "bootstrap or inverse empirical quantile sampling",
+        "moments": { "mean": "sample mean", "variance": "sample variance" }
+      }
+    },
+    "composition_rules": {
+      "joint": {
+        "log_prob": "sum child_i.log_prob(x_i)",
+        "cdf": "product child_i.cdf(x_i)",
+        "sample": "sample each dimension independently",
+        "moments": "per-dimension means and variances"
+      },
+      "mixture": {
+        "validation": "weights length equals components length; weights are non-negative and sum to 1 within tolerance",
+        "log_prob": "stable logsumexp_i(log(weight_i) + component_i.log_prob(x))",
+        "cdf": "sum_i weight_i * component_i.cdf(x)",
+        "sample": "draw component index by weights, then sample selected component",
+        "moments": "E[X]=sum w_i*m_i; Var[X]=sum w_i*(v_i+m_i^2)-E[X]^2"
+      },
+      "transform": {
+        "log_prob": "if op invertible, base.log_prob(g^-1(y)) + log_abs_derivative_of_inverse(y); otherwise unavailable",
+        "cdf": "if op monotone, use base.cdf(g^-1(y)) for increasing ops and 1-base.cdf(g^-1(y)) for decreasing ops; otherwise unavailable",
+        "sample": "sample base, then apply op"
+      }
+    },
+    "transform_ops": {
+      "affine": { "params": ["a", "b"], "constraints": ["a != 0"], "inverse": "(y-b)/a", "log_abs_d_inverse": "-log(abs(a))", "invertible": true, "monotone": true },
+      "exp": { "params": [], "constraints": ["y > 0 for inverse"], "inverse": "log(y)", "log_abs_d_inverse": "-log(y)", "invertible": true, "monotone": true },
+      "log": { "params": [], "inverse": "exp(y)", "log_abs_d_inverse": "y", "invertible": true, "monotone": true },
+      "pow": { "params": ["exponent"], "constraints": ["exponent != 0", "positive branch"], "inverse": "y^(1/exponent)", "log_abs_d_inverse": "log(abs(1/exponent)) + (1/exponent - 1)*log(y)", "invertible": true, "monotone": true },
+      "abs": { "params": [], "invertible": false, "monotone": false }
+    },
+    "validation_pipeline": [
+      "Validate against this JSON Schema.",
+      "Reject format_version whose MAJOR exceeds implemented major.",
+      "Recheck all parameter constraints.",
+      "Check mixture and categorical weight/probability sums and alignment.",
+      "Check support declarations do not extend beyond natural support.",
+      "Recompute capabilities and reject declared mismatches.",
+      "Reject unsupported optional bulk transports explicitly."
+    ]
+  },
   "type": "object",
   "required": ["format_version", "rv"],
   "additionalProperties": false,
