@@ -30,6 +30,8 @@
     "capability_rules": {
       "leaf_analytic": { "can_sample": true, "can_log_prob": true, "can_cdf": true },
       "leaf_categorical": { "can_sample": true, "can_log_prob": true, "can_cdf": true },
+      "leaf_poisson": { "can_sample": true, "can_log_prob": true, "can_cdf": true },
+      "leaf_binomial": { "can_sample": true, "can_log_prob": true, "can_cdf": true },
       "leaf_empirical": { "can_sample": true, "can_log_prob": true, "can_cdf": true },
       "joint": "AND each capability over dims",
       "mixture": "AND each capability over components",
@@ -106,6 +108,7 @@
         "moments": { "mean": "alpha/(alpha+beta)", "variance": "alpha*beta/((alpha+beta)^2*(alpha+beta+1))" }
       },
       "categorical": {
+        "discrete": true,
         "params": ["categories", "probs"],
         "constraints": ["same length", "non-empty", "probs >= 0", "sum(probs) == 1 within tolerance"],
         "support": "finite numeric categories",
@@ -113,6 +116,26 @@
         "cdf": "sum probabilities whose category <= x after sorting categories ascending",
         "sample": "draw category by probability weights",
         "moments": { "mean": "sum(categories_i*probs_i)", "variance": "sum(probs_i*(categories_i-mean)^2)" }
+      },
+      "poisson": {
+        "discrete": true,
+        "params": ["rate"],
+        "constraints": ["rate > 0"],
+        "support": "{0, 1, 2, ...}",
+        "log_prob": "k*log(rate) - rate - lgamma(k+1) for non-negative integer k (see discrete_evaluation.integer_snap), else -inf",
+        "cdf": "1 - regularized lower incomplete gamma P(floor(x)+1, rate) for x >= 0, else 0",
+        "sample": "count standard-exponential arrivals until their cumulative sum exceeds rate; the count minus 1 is the draw (exact, underflow-safe)",
+        "moments": { "mean": "rate", "variance": "rate" }
+      },
+      "binomial": {
+        "discrete": true,
+        "params": ["n", "p"],
+        "constraints": ["n integer >= 1", "0 < p < 1"],
+        "support": "{0, 1, ..., n}",
+        "log_prob": "lgamma(n+1) - lgamma(k+1) - lgamma(n-k+1) + k*log(p) + (n-k)*log(1-p) for integer 0 <= k <= n (see discrete_evaluation.integer_snap), else -inf",
+        "cdf": "0 for x < 0; 1 for x >= n; otherwise regularized incomplete beta I_(1-p)(n-k, k+1) with k = floor(x)",
+        "sample": "sum of n Bernoulli(p) draws (uniform < p)",
+        "moments": { "mean": "n*p", "variance": "n*p*(1-p)" }
       },
       "empirical": {
         "params": ["samples"],
@@ -123,6 +146,11 @@
         "sample": "bootstrap or inverse empirical quantile sampling",
         "moments": { "mean": "sample mean", "variance": "sample variance" }
       }
+    },
+    "discrete_evaluation": {
+      "discrete_leaves": ["categorical", "poisson", "binomial"],
+      "integer_snap": "For integer-valued leaves (poisson, binomial) a query x is treated as the integer k = round(x) when |x - round(x)| <= 1e-9; otherwise log_prob(x) = -inf. cdf evaluates at the floor of the snapped value.",
+      "transform_restriction": "Transforms apply change-of-variables to densities (composition_rules.transform), which is invalid for probability masses. A transform whose base subtree contains a discrete leaf MUST be rejected during semantic validation."
     },
     "composition_rules": {
       "joint": {
@@ -157,6 +185,7 @@
       "Recheck all parameter constraints.",
       "Check mixture and categorical weight/probability sums and alignment.",
       "Check support declarations do not extend beyond natural support.",
+      "Reject transform nodes whose base subtree contains a discrete leaf (see discrete_evaluation).",
       "Recompute capabilities and reject declared mismatches.",
       "Reject unsupported optional bulk transports explicitly."
     ]
@@ -261,7 +290,7 @@
           "enum": [
             "normal", "lognormal", "weibull", "uniform",
             "exponential", "gamma", "beta",
-            "categorical", "empirical"
+            "categorical", "poisson", "binomial", "empirical"
           ]
         },
         "params": { "type": "object" }
@@ -298,6 +327,14 @@
         {
           "if": { "properties": { "dist": { "const": "categorical" } } },
           "then": { "properties": { "params": { "$ref": "#/$defs/params_categorical" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "poisson" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_poisson" } } }
+        },
+        {
+          "if": { "properties": { "dist": { "const": "binomial" } } },
+          "then": { "properties": { "params": { "$ref": "#/$defs/params_binomial" } } }
         },
         {
           "if": { "properties": { "dist": { "const": "empirical" } } },
@@ -377,6 +414,23 @@
           "items": { "type": "number", "minimum": 0 },
           "minItems": 1
         }
+      }
+    },
+    "params_poisson": {
+      "description": "Discrete count distribution over {0, 1, 2, ...} with mean `rate`.",
+      "type": "object", "additionalProperties": false,
+      "required": ["rate"],
+      "properties": {
+        "rate": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "params_binomial": {
+      "description": "Discrete number of successes in `n` independent trials with success probability `p`.",
+      "type": "object", "additionalProperties": false,
+      "required": ["n", "p"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 1 },
+        "p": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1 }
       }
     },
     "params_empirical": {

@@ -46,3 +46,20 @@ pub fn rv_sample(doc: &str, seed: f64, n: usize) -> std::result::Result<Vec<f64>
         Samples::Joint(_) => Err(JsError::new("rv_sample: joint RVs are multi-dimensional")),
     }
 }
+
+/// Draw `n` samples of dimension `dim` as a `Float64Array`. Univariate RVs use `dim = 0`; for a
+/// Joint the full vector is drawn and the requested dimension is returned.
+#[wasm_bindgen]
+pub fn rv_sample_dim(doc: &str, seed: f64, n: usize, dim: usize) -> std::result::Result<Vec<f64>, JsError> {
+    let node = parse_str(doc).map_err(to_js)?;
+    let prepared = Prepared::compile(&node).map_err(to_js)?;
+    match prepared.sample(&mut Rng::new(seed as u64), n) {
+        Samples::Univariate(v) if dim == 0 => Ok(v),
+        Samples::Univariate(_) => Err(JsError::new("rv_sample_dim: univariate RV has only dim 0")),
+        Samples::Joint(mut dims) if dim < dims.len() => Ok(dims.swap_remove(dim)),
+        Samples::Joint(dims) => Err(JsError::new(&format!(
+            "rv_sample_dim: dim {dim} out of range for {} dimensions",
+            dims.len()
+        ))),
+    }
+}

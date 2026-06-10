@@ -5,6 +5,7 @@ export const rv_capabilities: (a: number, b: number) => [number, number, number,
 export const rv_cdf: (a: number, b: number, c: number) => [number, number, number];
 export const rv_log_prob: (a: number, b: number, c: number) => [number, number, number];
 export const rv_sample: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+export const rv_sample_dim: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
 export const __wbindgen_externrefs: WebAssembly.Table;
 export const __wbindgen_malloc: (a: number, b: number) => number;
 export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

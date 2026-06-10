@@ -10,7 +10,7 @@
 import { z } from 'zod'
 // Services
 import { capabilities } from './operations'
-import { createDistribution, type Distribution } from './distributions'
+import { DISCRETE_DISTS, createDistribution, type Distribution } from './distributions'
 import { zDocument, type RawNode } from './schema'
 // Types
 import {
@@ -137,6 +137,11 @@ export function validateSemantics(node: RVNode): void {
       node.components.forEach(validateSemantics)
       break
     case 'transform':
+      if (containsDiscreteLeaf(node.base)) {
+        throw new ValidationError(
+          'transform over a discrete base is invalid: change-of-variables applies to densities, not masses (SPEC.md §4.4)',
+        )
+      }
       validateSemantics(node.base)
       break
   }
@@ -190,7 +195,7 @@ export interface ToDocumentOptions {
 }
 
 export function toDocument(node: RVNode, options: ToDocumentOptions = {}): Record<string, unknown> {
-  const { format_version = '1.0.0', metadata } = options
+  const { format_version = '1.1.0', metadata } = options
   const doc: Record<string, unknown> = { format_version, rv: toDict(node) }
   if (metadata !== undefined) doc['metadata'] = metadata
   return doc
@@ -223,6 +228,19 @@ function checkSupportConsistency(support: Support, dist: Distribution): void {
 
 function boundTol(bound: number): number {
   return Number.isFinite(bound) ? 1e-9 * (1 + Math.abs(bound)) : 0
+}
+
+function containsDiscreteLeaf(node: RVNode): boolean {
+  switch (node.kind) {
+    case 'leaf':
+      return DISCRETE_DISTS.has(node.dist)
+    case 'joint':
+      return node.dims.some(containsDiscreteLeaf)
+    case 'mixture':
+      return node.components.some(containsDiscreteLeaf)
+    case 'transform':
+      return containsDiscreteLeaf(node.base)
+  }
 }
 
 function checkWeights(weights: readonly number[], label: string): void {

@@ -14,7 +14,7 @@ from . import operations
 # Types
 from .model import (Capabilities, Joint, Leaf, Mixture, RVNode, Support, Transform)
 from .ops import build_op
-from .distributions import create as create_distribution
+from .distributions import DISCRETE_DISTS, create as create_distribution
 # Errors
 from .errors import CapabilityMismatch, ValidationError
 
@@ -87,6 +87,10 @@ def validate_semantics(node: RVNode) -> None:
         for comp in node.components:
             validate_semantics(comp)
     elif isinstance(node, Transform):
+        if _contains_discrete_leaf(node.base):
+            raise ValidationError(
+                "transform over a discrete base is invalid: change-of-variables applies to "
+                "densities, not masses (SPEC.md §4.4)")
         validate_semantics(node.base)
 
     if node.declared is not None:
@@ -96,7 +100,7 @@ def validate_semantics(node: RVNode) -> None:
                 f"declared capabilities {node.declared.as_dict()} != computed {computed.as_dict()}")
 
 
-def to_document(node: RVNode, *, format_version: str = "1.0.0",
+def to_document(node: RVNode, *, format_version: str = "1.1.0",
                 metadata: Optional[Mapping] = None) -> dict:
     doc = {"format_version": format_version, "rv": to_dict(node)}
     if metadata is not None:
@@ -161,6 +165,18 @@ def _check_support_consistency(support: Support, dist) -> None:
 
 def _bound_tol(bound: float) -> float:
     return 1e-9 * (1.0 + abs(bound)) if math.isfinite(bound) else 0.0
+
+
+def _contains_discrete_leaf(node: RVNode) -> bool:
+    if isinstance(node, Leaf):
+        return node.dist in DISCRETE_DISTS
+    if isinstance(node, Joint):
+        return any(_contains_discrete_leaf(d) for d in node.dims)
+    if isinstance(node, Mixture):
+        return any(_contains_discrete_leaf(c) for c in node.components)
+    if isinstance(node, Transform):
+        return _contains_discrete_leaf(node.base)
+    return False
 
 
 def _check_weights(weights, label: str) -> None:

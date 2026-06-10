@@ -78,6 +78,20 @@
       "name": "empirical_samples"
     },
     {
+      "case": "cases/poisson_defects.rv.json",
+      "description": "Poisson defect count per specimen, rate=3.5 (discrete, materials QC example).",
+      "golden": "golden/poisson_defects.json",
+      "kind": "leaf",
+      "name": "poisson_defects"
+    },
+    {
+      "case": "cases/binomial_qc.rv.json",
+      "description": "Binomial: failures among n=20 quality-control trials at p=0.15 (discrete).",
+      "golden": "golden/binomial_qc.json",
+      "kind": "leaf",
+      "name": "binomial_qc"
+    },
+    {
       "case": "cases/joint_normal_uniform.rv.json",
       "description": "Independent joint of N(0,1) and Uniform(0,1).",
       "golden": "golden/joint_normal_uniform.json",
@@ -134,5 +148,5 @@
       "name": "nested_mixture_transform"
     }
   ],
-  "format_version": "1.0.0"
+  "format_version": "1.1.0"
 }

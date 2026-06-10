@@ -6,7 +6,7 @@
   },
   "case": "transform_abs_normal",
   "cdf": null,
-  "format_version": "1.0.0",
+  "format_version": "1.1.0",
   "kind": "transform",
   "log_prob": null,
   "moments": null,

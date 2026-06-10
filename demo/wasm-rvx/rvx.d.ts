@@ -20,3 +20,9 @@ export function rv_log_prob(doc: string, x: number): number;
  * Draw `n` samples (univariate RVs only) as a `Float64Array`.
  */
 export function rv_sample(doc: string, seed: number, n: number): Float64Array;
+
+/**
+ * Draw `n` samples of dimension `dim` as a `Float64Array`. Univariate RVs use `dim = 0`; for a
+ * Joint the full vector is drawn and the requested dimension is returned.
+ */
+export function rv_sample_dim(doc: string, seed: number, n: number, dim: number): Float64Array;

@@ -328,6 +328,108 @@ impl Distribution for Categorical {
     }
 }
 
+/// Integer-snap tolerance for integer-valued discrete leaves (SPEC.md §5.1).
+const INTEGER_SNAP_TOL: f64 = 1e-9;
+
+/// Snap x to round(x) within tolerance; `None` signals "not an integer".
+fn snap_integer(x: f64) -> Option<f64> {
+    let k = x.round();
+    if (x - k).abs() <= INTEGER_SNAP_TOL {
+        Some(k)
+    } else {
+        None
+    }
+}
+
+struct Poisson {
+    rate: f64,
+    log_rate: f64,
+}
+impl Distribution for Poisson {
+    fn log_prob(&self, x: f64) -> f64 {
+        match snap_integer(x) {
+            Some(k) if k >= 0.0 => k * self.log_rate - self.rate - lgamma(k + 1.0),
+            _ => NEG_INF,
+        }
+    }
+    fn cdf(&self, x: f64) -> f64 {
+        let k = snap_integer(x).unwrap_or(x).floor();
+        if k < 0.0 {
+            0.0
+        } else {
+            1.0 - reg_lower_gamma(k + 1.0, self.rate)
+        }
+    }
+    fn sample(&self, rng: &mut Rng, n: usize) -> Vec<f64> {
+        // Count standard-exponential arrivals until their sum exceeds rate - exact and
+        // underflow-safe for any rate, unlike the classic exp(-rate) uniform-product loop.
+        (0..n)
+            .map(|_| {
+                let mut k: f64 = -1.0;
+                let mut acc = 0.0;
+                while acc < self.rate {
+                    acc += rng.standard_exponential();
+                    k += 1.0;
+                }
+                k
+            })
+            .collect()
+    }
+    fn moments(&self) -> (f64, f64) {
+        (self.rate, self.rate)
+    }
+    fn support(&self) -> (f64, f64) {
+        (0.0, f64::INFINITY)
+    }
+}
+
+struct Binomial {
+    n: f64,
+    p: f64,
+    log_p: f64,
+    log_1m_p: f64,
+    log_choose_base: f64,
+}
+impl Binomial {
+    fn new(n: f64, p: f64) -> Self {
+        Binomial { n, p, log_p: p.ln(), log_1m_p: (-p).ln_1p(), log_choose_base: lgamma(n + 1.0) }
+    }
+}
+impl Distribution for Binomial {
+    fn log_prob(&self, x: f64) -> f64 {
+        match snap_integer(x) {
+            Some(k) if (0.0..=self.n).contains(&k) => {
+                self.log_choose_base - lgamma(k + 1.0) - lgamma(self.n - k + 1.0)
+                    + k * self.log_p
+                    + (self.n - k) * self.log_1m_p
+            }
+            _ => NEG_INF,
+        }
+    }
+    fn cdf(&self, x: f64) -> f64 {
+        let k = snap_integer(x).unwrap_or(x).floor();
+        if k < 0.0 {
+            0.0
+        } else if k >= self.n {
+            1.0
+        } else {
+            reg_inc_beta(self.n - k, k + 1.0, 1.0 - self.p)
+        }
+    }
+    fn sample(&self, rng: &mut Rng, n: usize) -> Vec<f64> {
+        let trials = self.n as usize;
+        (0..n)
+            .map(|_| (0..trials).filter(|_| rng.uniform() < self.p).count() as f64)
+            .collect()
+    }
+    fn moments(&self) -> (f64, f64) {
+        (self.n * self.p, self.n * self.p * (1.0 - self.p))
+    }
+    fn support(&self) -> (f64, f64) {
+        (0.0, self.n)
+    }
+}
+
 struct Empirical {
     samples: Vec<f64>,
     sorted: Vec<f64>,
@@ -377,6 +479,10 @@ impl Distribution for Empirical {
 
 // --- Factory ---------------------------------------------------------------------------------
 
+/// Leaves whose log_prob is a log-mass, not a log-density. A transform whose base subtree contains
+/// one of these is invalid: change-of-variables applies to densities only (SPEC.md §4.4).
+pub const DISCRETE_DISTS: [&str; 3] = ["categorical", "poisson", "binomial"];
+
 /// Construct the leaf distribution named `dist` from its canonical params (validates parameters).
 pub fn create(dist: &str, params: &Value) -> Result<Box<dyn Distribution>> {
     match dist {
@@ -398,6 +504,21 @@ pub fn create(dist: &str, params: &Value) -> Result<Box<dyn Distribution>> {
             num_array(params, "categories", dist)?,
             num_array(params, "probs", dist)?,
         ))),
+        "poisson" => {
+            let rate = pos(params, "rate", dist)?;
+            Ok(Box::new(Poisson { rate, log_rate: rate.ln() }))
+        }
+        "binomial" => {
+            let n = num(params, "n", dist)?;
+            if n.fract() != 0.0 || n < 1.0 {
+                return Err(RvError::Validation("binomial requires integer n >= 1".into()));
+            }
+            let p = num(params, "p", dist)?;
+            if p <= 0.0 || p >= 1.0 {
+                return Err(RvError::Validation("binomial requires 0 < p < 1".into()));
+            }
+            Ok(Box::new(Binomial::new(n, p)))
+        }
         "empirical" => {
             let samples = params
                 .get("samples")

@@ -310,6 +310,99 @@ class Categorical extends BaseDistribution {
   }
 }
 
+/** Integer-snap tolerance for integer-valued discrete leaves (SPEC.md §5.1). */
+const INTEGER_SNAP_TOL = 1e-9
+
+/** Snap x to round(x) within tolerance; NaN signals "not an integer". */
+function snapInteger(x: number): number {
+  const k = Math.round(x)
+  return Math.abs(x - k) <= INTEGER_SNAP_TOL ? k : NaN
+}
+
+class Poisson extends BaseDistribution {
+  private readonly logRate: number
+  constructor(private readonly rate: number) {
+    super()
+    this.logRate = Math.log(rate)
+  }
+  logProb(x: number): number {
+    const k = snapInteger(x)
+    if (Number.isNaN(k) || k < 0) return NEG_INF
+    return k * this.logRate - this.rate - lgamma(k + 1)
+  }
+  cdf(x: number): number {
+    const snapped = Number.isNaN(snapInteger(x)) ? x : snapInteger(x)
+    const k = Math.floor(snapped)
+    if (k < 0) return 0
+    return 1 - regLowerGamma(k + 1, this.rate)
+  }
+  sample(rng: RNG, n: number): Float64Array {
+    // Count standard-exponential arrivals until their sum exceeds rate - exact and underflow-safe
+    // for any rate, unlike the classic exp(-rate) uniform-product loop (SPEC.md §8.1).
+    const out = new Float64Array(n)
+    for (let i = 0; i < n; i++) {
+      let k = -1
+      let acc = 0
+      while (acc < this.rate) {
+        acc += rng.standardExponential()
+        k++
+      }
+      out[i] = k
+    }
+    return out
+  }
+  moments(): [number, number] {
+    return [this.rate, this.rate]
+  }
+  override support(): [number, number] {
+    return [0, Infinity]
+  }
+}
+
+class Binomial extends BaseDistribution {
+  private readonly logP: number
+  private readonly log1mP: number
+  private readonly logChooseBase: number
+  constructor(
+    private readonly n: number,
+    private readonly p: number,
+  ) {
+    super()
+    this.logP = Math.log(p)
+    this.log1mP = Math.log1p(-p)
+    this.logChooseBase = lgamma(n + 1)
+  }
+  logProb(x: number): number {
+    const k = snapInteger(x)
+    if (Number.isNaN(k) || k < 0 || k > this.n) return NEG_INF
+    return (
+      this.logChooseBase - lgamma(k + 1) - lgamma(this.n - k + 1) + k * this.logP + (this.n - k) * this.log1mP
+    )
+  }
+  cdf(x: number): number {
+    const snapped = Number.isNaN(snapInteger(x)) ? x : snapInteger(x)
+    const k = Math.floor(snapped)
+    if (k < 0) return 0
+    if (k >= this.n) return 1
+    return regIncBeta(this.n - k, k + 1, 1 - this.p)
+  }
+  sample(rng: RNG, n: number): Float64Array {
+    const out = new Float64Array(n)
+    for (let i = 0; i < n; i++) {
+      let k = 0
+      for (let t = 0; t < this.n; t++) if (rng.uniform() < this.p) k++
+      out[i] = k
+    }
+    return out
+  }
+  moments(): [number, number] {
+    return [this.n * this.p, this.n * this.p * (1 - this.p)]
+  }
+  override support(): [number, number] {
+    return [0, this.n]
+  }
+}
+
 class Empirical extends BaseDistribution {
   private readonly n: number
   private readonly sorted: Float64Array
@@ -421,4 +514,18 @@ register('exponential', (p) => new Exponential(positive(p, 'rate', 'exponential'
 register('gamma', (p) => new Gamma(positive(p, 'shape', 'gamma'), positive(p, 'scale', 'gamma')))
 register('beta', (p) => new Beta(positive(p, 'alpha', 'beta'), positive(p, 'beta', 'beta')))
 register('categorical', (p) => new Categorical(numArray(p, 'categories', 'categorical'), numArray(p, 'probs', 'categorical')))
+register('poisson', (p) => new Poisson(positive(p, 'rate', 'poisson')))
+register('binomial', (p) => {
+  const n = num(p, 'n', 'binomial')
+  if (!Number.isInteger(n) || n < 1) throw new ValidationError('binomial requires integer n >= 1')
+  const prob = num(p, 'p', 'binomial')
+  if (prob <= 0 || prob >= 1) throw new ValidationError('binomial requires 0 < p < 1')
+  return new Binomial(n, prob)
+})
 register('empirical', (p) => new Empirical(decodeBulk(p['samples'] as BulkRef)))
+
+/**
+ * Leaves whose log_prob is a log-mass, not a log-density. A transform whose base subtree contains
+ * one of these is invalid: change-of-variables applies to densities only (SPEC.md §4.4).
+ */
+export const DISCRETE_DISTS: ReadonlySet<string> = new Set(['categorical', 'poisson', 'binomial'])

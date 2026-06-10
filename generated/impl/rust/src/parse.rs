@@ -4,7 +4,7 @@
 //! then builds the model and runs the semantic stage: weight/alignment rules, parameter sanity (via
 //! distribution construction), and capability re-validation - declared MUST equal recomputed.
 
-use crate::distributions::{create, Distribution};
+use crate::distributions::{create, Distribution, DISCRETE_DISTS};
 use crate::errors::{Result, RvError};
 use crate::model::{Capabilities, RvNode, Support};
 use crate::operations::capabilities;
@@ -176,7 +176,16 @@ pub fn validate_semantics(node: &RvNode) -> Result<()> {
                 validate_semantics(comp)?;
             }
         }
-        RvNode::Transform { base, .. } => validate_semantics(base)?,
+        RvNode::Transform { base, .. } => {
+            if contains_discrete_leaf(base) {
+                return Err(RvError::Validation(
+                    "transform over a discrete base is invalid: change-of-variables applies to \
+                     densities, not masses (SPEC.md §4.4)"
+                        .into(),
+                ));
+            }
+            validate_semantics(base)?;
+        }
     }
 
     if let Some(declared) = node.declared() {
@@ -260,6 +269,15 @@ fn bound_tol(bound: f64) -> f64 {
         1e-9 * (1.0 + bound.abs())
     } else {
         0.0
+    }
+}
+
+fn contains_discrete_leaf(node: &RvNode) -> bool {
+    match node {
+        RvNode::Leaf { dist, .. } => DISCRETE_DISTS.contains(&dist.as_str()),
+        RvNode::Joint { dims, .. } => dims.iter().any(contains_discrete_leaf),
+        RvNode::Mixture { components, .. } => components.iter().any(contains_discrete_leaf),
+        RvNode::Transform { base, .. } => contains_discrete_leaf(base),
     }
 }
 

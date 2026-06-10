@@ -31,11 +31,16 @@ from rvx.errors import MomentsNotAvailable            # noqa: E402
 HERE = os.path.dirname(os.path.abspath(__file__))
 CASES_DIR = os.path.join(HERE, "cases")
 GOLDEN_DIR = os.path.join(HERE, "golden")
-VERSION = "1.0.0"
+VERSION = "1.1.0"
+# Spec 1.1.0 is a MINOR (backward-compatible) revision; this case stays at 1.0.0 to prove that
+# documents written against the previous spec remain valid (SPEC.md §9).
+VERSION_OVERRIDES = {"normal_standard": "1.0.0"}
 
 SAMPLING = {"seed": 12345, "n": 200000, "ks_stat_max": 0.02, "mean_atol": 0.05, "var_rtol": 0.05}
 SAMPLING_EMPIRICAL = {"seed": 12345, "n": 200000, "ks_stat_max": 0.05, "mean_atol": 0.1, "var_rtol": 0.1}
 SAMPLING_NO_KS = {"seed": 12345, "n": 200000, "ks_stat_max": None, "mean_atol": 0.05, "var_rtol": 0.05}
+# Discrete leaves: the KS test is a continuous-CDF test, so it is skipped (like categorical).
+SAMPLING_DISCRETE = SAMPLING_NO_KS
 
 # A sampling check must pass for *any* conforming RNG stream, not just numpy's. The sample mean has
 # standard error sqrt(Var/n); an absolute tolerance below that is only satisfiable by luck (e.g.
@@ -83,6 +88,10 @@ CASES = [
      [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], SAMPLING),
     ("empirical_samples", "Empirical leaf: 2000 inline samples from N(0,1); log_prob via Gaussian KDE (Scott).",
      leaf("empirical", {"samples": encode_base64(_emp)}), [-2.0, -1.0, 0.0, 1.0, 2.0], SAMPLING_EMPIRICAL),
+    ("poisson_defects", "Poisson defect count per specimen, rate=3.5 (discrete, materials QC example).",
+     leaf("poisson", {"rate": 3.5}), [0.0, 1.0, 2.0, 4.0, 7.0], SAMPLING_DISCRETE),
+    ("binomial_qc", "Binomial: failures among n=20 quality-control trials at p=0.15 (discrete).",
+     leaf("binomial", {"n": 20, "p": 0.15}), [0.0, 1.0, 3.0, 5.0, 10.0], SAMPLING_DISCRETE),
     ("joint_normal_uniform", "Independent joint of N(0,1) and Uniform(0,1).",
      {"kind": "joint", "dims": [leaf("normal", {"mu": 0.0, "sigma": 1.0}),
                                 leaf("uniform", {"low": 0.0, "high": 1.0})]},
@@ -113,11 +122,12 @@ CASES = [
 
 
 def build(name, rv_struct, points, sampling):
-    node = rvx.parse_document({"format_version": VERSION, "rv": rv_struct})
+    version = VERSION_OVERRIDES.get(name, VERSION)
+    node = rvx.parse_document({"format_version": version, "rv": rv_struct})
     caps = rvx.capabilities(node)
     rv_struct["capabilities"] = caps.as_dict()  # declared == recomputed
 
-    golden = {"case": name, "format_version": VERSION, "kind": rv_struct["kind"],
+    golden = {"case": name, "format_version": version, "kind": rv_struct["kind"],
               "capabilities": caps.as_dict(),
               "log_prob": None, "cdf": None, "moments": None, "sampling": dict(sampling)}
     if caps.can_log_prob and points:
@@ -136,7 +146,7 @@ def build(name, rv_struct, points, sampling):
             golden["sampling"]["mean_atol"] = _mean_atol(
                 sampling["mean_atol"], float(np.var(xs)), sampling["n"])
 
-    doc = {"format_version": VERSION, "metadata": {"name": name}, "rv": rv_struct}
+    doc = {"format_version": version, "metadata": {"name": name}, "rv": rv_struct}
     return doc, golden
 
 

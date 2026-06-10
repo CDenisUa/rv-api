@@ -25,7 +25,7 @@ and labels that proof separately.
 
 ## Usage
 
-From the repo root (needs the `claude` CLI on PATH; no API key):
+From the repo root:
 
 ```bash
 python3 pipeline/run.py spec                 # Prompt #1  -> spec artifacts
@@ -37,11 +37,25 @@ Output goes to `generated/.live/` by default (git-ignored) so a live run never c
 artifacts. Point `--out generated` if you deliberately want to refresh the canonical set, then re-run
 the conformance suite before committing.
 
-| Env var     | Default  | Meaning                                  |
-|-------------|----------|------------------------------------------|
-| `RVX_MODEL` | `sonnet` | Claude model alias/id used for generation |
+## Backends
 
-`run.py` shells out to the local `claude` CLI in headless mode (`-p --tools "" --output-format json`)
-and uses your Claude Code subscription - nothing to configure, no key, no quota.
+| `--backend` | Needs | Notes |
+|-------------|-------|-------|
+| `cli` | Claude Code CLI on PATH | headless mode (`-p --tools "" --output-format json`); subscription auth, no key |
+| `api` | `ANTHROPIC_API_KEY` | Anthropic Messages API over the Python standard library (no SDK) |
+| `auto` (default) | either | prefers the CLI, falls back to the API key |
 
-No third-party dependencies - `run.py` uses only the Python standard library (subprocess).
+| Env var             | Default  | Meaning                                  |
+|---------------------|----------|------------------------------------------|
+| `RVX_MODEL`         | `sonnet` | Claude model alias/id used for generation |
+| `ANTHROPIC_API_KEY` | -        | enables the `api` backend                 |
+
+## Provenance
+
+Every run writes `<out>/PROVENANCE.json`: backend, model, UTC timestamp, SHA-256 of each prompt (and
+of the attached `rv.schema.json` for Prompt #2), the files written, durations, and token usage. The
+canonical artifact set has its own committed record at
+[`../generated/PROVENANCE.json`](../generated/PROVENANCE.json), which pins the prompt hashes and
+explains how the set is validated (the conformance oracle).
+
+No third-party dependencies - `run.py` uses only the Python standard library (subprocess + urllib).

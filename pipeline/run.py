@@ -18,6 +18,7 @@ No third-party dependencies: it uses only the Python standard library (subproces
 
 Environment:
     RVX_MODEL           Claude model alias/id (default: "sonnet").
+    ANTHROPIC_API_KEY   enables the Anthropic API backend when the Claude Code CLI is unavailable.
 
 Usage (from repo root):
     python3 pipeline/run.py spec                 # Prompt #1 -> spec artifacts
@@ -25,19 +26,30 @@ Usage (from repo root):
     python3 pipeline/run.py all                  # spec, then all three implementations
     # add --out DIR to write somewhere other than generated/.live (never clobbers canonical
     # generated/ unless you pass --out generated)
+    # add --backend cli|api|auto to pick the LLM backend (default auto: CLI if found, else API key)
+
+Every run also writes `<out>/PROVENANCE.json`: backend, model, UTC timestamp, prompt SHA-256
+hashes, written files, durations, and token usage - so a generated artifact set is traceable to
+the exact prompts and model that produced it.
 """
 
 from __future__ import annotations
 
 # Core
 import argparse
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
+import urllib.error
+import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Union
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = REPO_ROOT / "pipeline" / "prompts"
@@ -46,6 +58,17 @@ CANONICAL_SPEC = REPO_ROOT / "generated" / "spec"
 DEFAULT_MODEL = "sonnet"          # Claude Code CLI model alias
 CLI_TIMEOUT_SEC = 900
 LANGUAGES = ("python", "typescript", "rust")
+
+# Anthropic API backend (used when the Claude Code CLI is unavailable; needs ANTHROPIC_API_KEY).
+API_URL = "https://api.anthropic.com/v1/messages"
+API_VERSION = "2023-06-01"
+API_MAX_TOKENS = 32000
+# The raw API takes full model ids, not CLI aliases.
+API_MODEL_ALIASES = {
+    "sonnet": "claude-sonnet-4-6",
+    "opus": "claude-opus-4-8",
+    "haiku": "claude-haiku-4-5-20251001",
+}
 
 # Map a target language to the on-disk subtree of generated/impl.
 IMPL_DIR = {"python": "python", "typescript": "typescript", "rust": "rust"}
@@ -66,8 +89,11 @@ class ClaudeCliClient:
     file via a tool - which would trigger a permission denial and a clarifying question instead.
     """
 
+    name = "claude-cli"
+
     def __init__(self, model: str):
         self.model = model
+        self.last_meta: dict[str, object] = {}
         self.exe = shutil.which("claude")
         if not self.exe:
             raise SystemExit(
@@ -97,6 +123,71 @@ class ClaudeCliClient:
             text = proc.stdout.strip()
         if not text:
             raise LLMError(f"claude CLI returned empty output; {_format_claude_error(payload, proc.stdout, proc.stderr)}")
+        self.last_meta = {
+            k: payload.get(k)
+            for k in ("usage", "total_cost_usd", "duration_ms", "model")
+            if payload is not None and payload.get(k) is not None
+        }
+        return text
+
+
+class AnthropicApiClient:
+    """Anthropic Messages API backend over the Python standard library (no SDK dependency).
+
+    Used when the Claude Code CLI is not installed - e.g. on a reviewer's machine - so the live
+    pipeline stays runnable with nothing but Python and an API key.
+    """
+
+    name = "anthropic-api"
+
+    def __init__(self, model: str):
+        self.model = API_MODEL_ALIASES.get(model, model)
+        self.last_meta: dict[str, object] = {}
+        self.key = os.environ.get("ANTHROPIC_API_KEY")
+        if not self.key:
+            raise SystemExit(
+                "ANTHROPIC_API_KEY is not set. Either install the Claude Code CLI (subscription "
+                "auth) or export an API key to use the Anthropic API backend."
+            )
+
+    def complete(self, prompt: str, system: str | None = None) -> str:
+        body: dict[str, object] = {
+            "model": self.model,
+            "max_tokens": API_MAX_TOKENS,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if system:
+            body["system"] = system
+        req = urllib.request.Request(
+            API_URL,
+            data=json.dumps(body).encode("utf-8"),
+            headers={
+                "x-api-key": self.key,
+                "anthropic-version": API_VERSION,
+                "content-type": "application/json",
+            },
+        )
+        started = time.monotonic()
+        try:
+            with urllib.request.urlopen(req, timeout=CLI_TIMEOUT_SEC) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", errors="replace")
+            raise LLMError(f"Anthropic API HTTP {e.code}: {_compact(detail)}") from e
+        except (urllib.error.URLError, TimeoutError) as e:
+            raise LLMError(f"Anthropic API request failed: {e}") from e
+        text = "".join(
+            block.get("text", "")
+            for block in payload.get("content", [])
+            if block.get("type") == "text"
+        ).strip()
+        if not text:
+            raise LLMError(f"Anthropic API returned empty output: {_compact(payload)}")
+        self.last_meta = {
+            "usage": payload.get("usage"),
+            "duration_ms": int((time.monotonic() - started) * 1000),
+            "model": payload.get("model"),
+        }
         return text
 
 
@@ -175,23 +266,25 @@ def write_file(path: Path, content: str) -> None:
     print(f"  wrote {path.relative_to(REPO_ROOT)}  ({len(content)} bytes)")
 
 
-def cmd_spec(client: ClaudeCliClient, out: Path) -> None:
+def cmd_spec(client: LLMClient, out: Path) -> dict:
     print("Prompt #1 -> spec (SPEC.md + rv.schema.json)")
     reply = client.complete(load_prompt("01-generate-spec.md"))
     files = parse_files(reply)
     spec_md = files.get("SPEC.md")
     schema = files.get("rv.schema.json")
     if spec_md is None or schema is None:
+        raw = _dump_reply(out, "spec", reply)
         raise LLMError(
             "could not locate both SPEC.md and rv.schema.json in the reply "
-            f"(found: {sorted(files)})"
+            f"(found: {sorted(files)}); raw reply saved to {raw}"
         )
     json.loads(schema)  # fail fast if the schema is not valid JSON
     write_file(out / "spec" / "SPEC.md", spec_md)
     write_file(out / "spec" / "rv.schema.json", schema)
+    return _provenance_entry("spec", "01-generate-spec.md", ["spec/SPEC.md", "spec/rv.schema.json"], client)
 
 
-def cmd_impl(client: ClaudeCliClient, language: str, out: Path) -> None:
+def cmd_impl(client: LLMClient, language: str, out: Path) -> dict:
     if language not in LANGUAGES:
         raise SystemExit(f"language must be one of {LANGUAGES}, got {language!r}")
     print(f"Prompt #2 -> implementation ({language})")
@@ -204,20 +297,80 @@ def cmd_impl(client: ClaudeCliClient, language: str, out: Path) -> None:
     reply = client.complete(attached)
     files = parse_files(reply)
     if not files:
-        raise LLMError("no <<<FILE: ...>>> blocks in the implementation reply")
+        raw = _dump_reply(out, f"impl-{language}", reply)
+        raise LLMError(f"no <<<FILE: ...>>> blocks in the implementation reply; raw reply saved to {raw}")
     target = out / "impl" / IMPL_DIR[language] / "_live"
     if target.exists():
         shutil.rmtree(target)  # start clean so a prior run's files never mix into this one
+    written = []
     for name, content in files.items():
         # Normalise to the library root: drop any leading generated/impl/<lang>/ prefix the model
         # may echo from the attachments, and neutralise parent escapes.
         rel = Path(re.sub(r"^generated/impl/[^/]+/", "", name.strip()).replace("..", "_"))
         write_file(target / rel, content)
+        written.append(str(Path("impl") / IMPL_DIR[language] / "_live" / rel))
+    entry = _provenance_entry(f"impl:{language}", "02-generate-impl.md", written, client)
+    entry["attachment_sha256"] = {"rv.schema.json": hashlib.sha256(schema.encode("utf-8")).hexdigest()}
+    return entry
 
 
-def build_client() -> ClaudeCliClient:
-    """Construct the Claude Code CLI backend (subscription auth, no key). RVX_MODEL overrides model."""
-    return ClaudeCliClient(os.environ.get("RVX_MODEL", DEFAULT_MODEL))
+def _dump_reply(out: Path, step: str, reply: str) -> Path:
+    """Save an unparseable model reply for debugging (the error alone hides what came back)."""
+    path = out / f"_raw-{step}.txt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(reply, encoding="utf-8")
+    return path
+
+
+def _provenance_entry(step: str, prompt_name: str, files: list[str], client: LLMClient) -> dict:
+    prompt_bytes = (PROMPTS / prompt_name).read_bytes()
+    return {
+        "step": step,
+        "prompt": prompt_name,
+        "prompt_sha256": hashlib.sha256(prompt_bytes).hexdigest(),
+        "files": files,
+        **client.last_meta,
+    }
+
+
+def write_provenance(out: Path, client: LLMClient, runs: list[dict]) -> None:
+    """Record what produced this artifact set: backend, model, prompt hashes, files, usage."""
+    doc = {
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "backend": client.name,
+        "requested_model": client.model,
+        "runs": runs,
+        "oracle": (
+            "conformance/: every generated implementation must reproduce the golden values within "
+            "an absolute 1e-9 to be accepted"
+        ),
+    }
+    path = out / "PROVENANCE.json"
+    path.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(f"  wrote {path.relative_to(REPO_ROOT) if path.is_relative_to(REPO_ROOT) else path}")
+
+
+# Either backend satisfies the same informal protocol: .name, .model, .last_meta, .complete().
+LLMClient = Union[ClaudeCliClient, AnthropicApiClient]
+
+
+def build_client(backend: str) -> LLMClient:
+    """Construct the LLM backend. `auto` prefers the Claude Code CLI (subscription auth, no key)
+    and falls back to the Anthropic API when an ANTHROPIC_API_KEY is set."""
+    model = os.environ.get("RVX_MODEL", DEFAULT_MODEL)
+    if backend == "cli":
+        return ClaudeCliClient(model)
+    if backend == "api":
+        return AnthropicApiClient(model)
+    if shutil.which("claude"):
+        return ClaudeCliClient(model)
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return AnthropicApiClient(model)
+    raise SystemExit(
+        "no LLM backend available: install the Claude Code CLI (subscription auth) or export "
+        "ANTHROPIC_API_KEY for the API backend. The committed artifacts in generated/ are the "
+        "replay (offline) outputs."
+    )
 
 
 def main(argv: list[str]) -> int:
@@ -226,23 +379,27 @@ def main(argv: list[str]) -> int:
     parser.add_argument("language", nargs="?", help="for `impl`: one of python|typescript|rust")
     parser.add_argument("--out", default=str(REPO_ROOT / "generated" / ".live"),
                         help="output root (default: generated/.live; never clobbers canonical unless you point here)")
+    parser.add_argument("--backend", choices=["auto", "cli", "api"], default="auto",
+                        help="LLM backend: Claude Code CLI, Anthropic API (ANTHROPIC_API_KEY), or auto")
     args = parser.parse_args(argv)
     out = Path(args.out).resolve()
 
-    client = build_client()
+    client = build_client(args.backend)
     rel_out = out.relative_to(REPO_ROOT) if out.is_relative_to(REPO_ROOT) else out
-    print(f"provider: claude   model: {client.model}   out: {rel_out}\n")
+    print(f"backend: {client.name}   model: {client.model}   out: {rel_out}\n")
 
+    runs: list[dict] = []
     if args.command == "spec":
-        cmd_spec(client, out)
+        runs.append(cmd_spec(client, out))
     elif args.command == "impl":
         if not args.language:
             raise SystemExit("`impl` requires a language: python|typescript|rust")
-        cmd_impl(client, args.language, out)
+        runs.append(cmd_impl(client, args.language, out))
     elif args.command == "all":
-        cmd_spec(client, out)
+        runs.append(cmd_spec(client, out))
         for lang in LANGUAGES:
-            cmd_impl(client, lang, out)
+            runs.append(cmd_impl(client, lang, out))
+    write_provenance(out, client, runs)
     print("\ndone.")
     return 0
 

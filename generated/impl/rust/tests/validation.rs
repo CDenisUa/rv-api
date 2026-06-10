@@ -56,3 +56,50 @@ fn support_upper_above_natural_is_rejected() {
     );
     assert!(matches!(parse_value(&d), Err(RvError::Validation(m)) if m.contains("upper")));
 }
+
+// --- discrete leaves (SPEC.md §5.1, §4.4) ---------------------------------------------------------
+
+#[test]
+fn poisson_rejects_nonpositive_rate() {
+    for rate in [0.0, -1.0] {
+        let d = doc(leaf("poisson", json!({ "rate": rate }), None), "1.1.0");
+        assert!(matches!(parse_value(&d), Err(RvError::Validation(m)) if m.contains("rate")));
+    }
+}
+
+#[test]
+fn binomial_rejects_bad_params() {
+    for params in [
+        json!({ "n": 0, "p": 0.5 }),
+        json!({ "n": 2.5, "p": 0.5 }),
+        json!({ "n": 10, "p": 0.0 }),
+        json!({ "n": 10, "p": 1.0 }),
+    ] {
+        let d = doc(leaf("binomial", params, None), "1.1.0");
+        assert!(matches!(parse_value(&d), Err(RvError::Validation(_))), "accepted bad binomial");
+    }
+}
+
+#[test]
+fn transform_over_discrete_base_is_rejected() {
+    let bases = [
+        leaf("poisson", json!({ "rate": 3.5 }), None),
+        leaf("categorical", json!({ "categories": [1.0, 2.0], "probs": [0.5, 0.5] }), None),
+        json!({
+            "kind": "mixture", "weights": [0.5, 0.5],
+            "components": [
+                leaf("normal", json!({ "mu": 0.0, "sigma": 1.0 }), None),
+                leaf("binomial", json!({ "n": 5, "p": 0.5 }), None),
+            ],
+        }),
+    ];
+    for base in bases {
+        let rv = json!({
+            "kind": "transform",
+            "op": { "name": "affine", "params": { "a": 2.0, "b": 0.0 } },
+            "base": base,
+        });
+        let d = doc(rv, "1.1.0");
+        assert!(matches!(parse_value(&d), Err(RvError::Validation(m)) if m.contains("discrete")));
+    }
+}

@@ -33,6 +33,8 @@ export interface SampleRequest {
   n: number
   seed: number
   engine: Engine
+  /** Dimension to return for a Joint RV (default 0; ignored for univariate RVs). */
+  dim?: number
 }
 
 /** A worker response carrying the drawn samples (transferred buffer) and their summary stats. */

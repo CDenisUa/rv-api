@@ -44,3 +44,31 @@ describe('support consistency (SPEC.md §6.1)', () => {
     ).toThrow(/upper/)
   })
 })
+
+describe('discrete leaves (SPEC.md §5.1, §4.4)', () => {
+  it.each([[{ rate: 0 }], [{ rate: -1 }]])('rejects poisson with bad rate %j', (params) => {
+    expect(() => parseDocument(doc(leaf('poisson', params)))).toThrow(ValidationError)
+  })
+  it.each([
+    [{ n: 0, p: 0.5 }],
+    [{ n: 2.5, p: 0.5 }],
+    [{ n: 10, p: 0 }],
+    [{ n: 10, p: 1 }],
+  ])('rejects binomial with bad params %j', (params) => {
+    expect(() => parseDocument(doc(leaf('binomial', params)))).toThrow(ValidationError)
+  })
+  it.each([
+    [leaf('poisson', { rate: 3.5 })],
+    [leaf('categorical', { categories: [1, 2], probs: [0.5, 0.5] })],
+    [
+      {
+        kind: 'mixture',
+        weights: [0.5, 0.5],
+        components: [leaf('normal', { mu: 0, sigma: 1 }), leaf('binomial', { n: 5, p: 0.5 })],
+      },
+    ],
+  ])('rejects a transform whose base subtree is discrete', (base) => {
+    const rv = { kind: 'transform', op: { name: 'affine', params: { a: 2, b: 0 } }, base }
+    expect(() => parseDocument(doc(rv))).toThrow(/discrete/)
+  })
+})

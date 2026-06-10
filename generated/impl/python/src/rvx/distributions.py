@@ -67,6 +67,32 @@ class _Scipy(Distribution):
         return float(lo), float(hi)
 
 
+#: Integer-snap tolerance for integer-valued discrete leaves (SPEC.md §5.1).
+INTEGER_SNAP_TOL = 1e-9
+
+
+class _ScipyDiscrete(_Scipy):
+    """Adapter over a frozen *discrete* scipy.stats distribution (poisson, binomial).
+
+    log_prob is the log-mass; a query x snaps to round(x) within INTEGER_SNAP_TOL, any other
+    non-integer x has mass 0. cdf evaluates at the floor of the snapped value (SPEC.md §5.1, §8.1).
+    """
+
+    def log_prob(self, x):
+        xs = np.atleast_1d(np.asarray(x, dtype=float))
+        k = np.rint(xs)
+        with np.errstate(all="ignore"):
+            out = np.where(np.abs(xs - k) <= INTEGER_SNAP_TOL, self._d.logpmf(k), -np.inf)
+        return out if np.ndim(x) else float(out[0])
+
+    def cdf(self, x):
+        xs = np.atleast_1d(np.asarray(x, dtype=float))
+        k = np.rint(xs)
+        snapped = np.where(np.abs(xs - k) <= INTEGER_SNAP_TOL, k, xs)
+        out = self._d.cdf(snapped)
+        return out if np.ndim(x) else float(np.asarray(out).reshape(-1)[0])
+
+
 class Categorical(Distribution):
     def __init__(self, categories, probs):
         self._cats = np.asarray(categories, dtype=float)
@@ -126,6 +152,10 @@ class Empirical(Distribution):
 # --- Registry --------------------------------------------------------------------------------
 _REGISTRY: Dict[str, Callable[[Mapping], Distribution]] = {}
 
+#: Leaves whose log_prob is a log-mass, not a log-density. A transform whose base subtree contains
+#: one of these is invalid: change-of-variables applies to densities only (SPEC.md §4.4).
+DISCRETE_DISTS = frozenset({"categorical", "poisson", "binomial"})
+
 
 def register(name: str):
     def deco(factory: Callable[[Mapping], Distribution]):
@@ -153,3 +183,21 @@ register("gamma")(lambda p: _Scipy(stats.gamma(a=p["shape"], scale=p["scale"])))
 register("beta")(lambda p: _Scipy(stats.beta(a=p["alpha"], b=p["beta"])))
 register("categorical")(lambda p: Categorical(p["categories"], p["probs"]))
 register("empirical")(lambda p: Empirical(decode_bulk(p["samples"])))
+
+
+@register("poisson")
+def _poisson(p):
+    rate = p["rate"]
+    if not (isinstance(rate, (int, float)) and rate > 0):
+        raise ValidationError("poisson requires rate > 0")
+    return _ScipyDiscrete(stats.poisson(mu=rate))
+
+
+@register("binomial")
+def _binomial(p):
+    n, prob = p["n"], p["p"]
+    if not (isinstance(n, (int, float)) and float(n).is_integer() and n >= 1):
+        raise ValidationError("binomial requires integer n >= 1")
+    if not (isinstance(prob, (int, float)) and 0 < prob < 1):
+        raise ValidationError("binomial requires 0 < p < 1")
+    return _ScipyDiscrete(stats.binom(n=int(n), p=prob))

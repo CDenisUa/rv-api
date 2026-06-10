@@ -54,18 +54,22 @@ For `joint` cases, `x` is a vector and `moments.mean` / `moments.variance` are p
   tight `1e-9`.
 - **Sampling** is stochastic and RNG-dependent; it uses statistical tolerances (KS + moment bounds).
 
-## Coverage (17 cases)
+## Coverage (21 cases)
 
 | Area | Cases |
 |------|-------|
 | Analytic leaves | normal_standard, normal_shifted, lognormal_basic, weibull_strength, uniform_unit, uniform_range, exponential_basic, gamma_basic, beta_basic |
-| Discrete / sample-based | categorical_die, empirical_samples |
+| Discrete leaves | categorical_die, poisson_defects, binomial_qc |
+| Sample-based | empirical_samples |
 | Composites | joint_normal_uniform, mixture_bimodal |
-| Transforms | transform_exp_normal (invertible), transform_affine_normal (invertible), transform_abs_normal (non-invertible → log_prob/cdf dropped) |
+| Transforms | transform_exp_normal, transform_affine_normal, transform_log_lognormal, transform_pow_lognormal (all invertible), transform_abs_normal (non-invertible → log_prob/cdf dropped) |
 | Recursion | nested_mixture_transform (depth-2) |
 
 `transform_abs_normal` is intentionally non-invertible to assert that capability degradation is
-handled honestly.
+handled honestly. The discrete cases (`categorical_die`, `poisson_defects`, `binomial_qc`) set
+`ks_stat_max` to `null`: the KS test is a continuous-CDF test, so discrete sampling is checked via
+the moment tolerances instead. `normal_standard` stays at `format_version` `1.0.0` while the rest of
+the suite is `1.1.0`, proving the MINOR revision is backward-compatible (SPEC.md §9).
 
 ## Regenerating
 

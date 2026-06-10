@@ -38,6 +38,7 @@ export {
   createDistribution,
   register,
   registeredNames,
+  DISCRETE_DISTS,
   type Distribution,
 } from './distributions'
 export { zDocument, zNode, type RawDocument, type RawNode } from './schema'
@@ -55,4 +56,4 @@ export {
   NotInvertibleError,
 } from './errors'
 
-export const VERSION = '1.0.0'
+export const VERSION = '1.1.0'

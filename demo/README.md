@@ -100,8 +100,12 @@ main thread (live density), and the server (the conformance proof).
 
 ## Deploy (Vercel)
 
+Deployed in production at **<https://rv-exchange-demo.vercel.app>**.
+
 The demo lives in this subdirectory of the monorepo. In the Vercel project settings set
-**Root Directory = `demo`** (Next.js is auto-detected; no `vercel.json` needed). Then:
+**Root Directory = `demo`** (Next.js is auto-detected). [`vercel.json`](./vercel.json) extends the
+install command to also install the linked `rvx` engine's production deps (zod), which `tsc`
+resolves at the package's real path outside `demo/`. Then, from the repo root:
 
 ```bash
 npm i -g vercel
@@ -109,7 +113,8 @@ vercel            # link + preview deploy
 vercel --prod     # production
 ```
 
-The committed `wasm-rvx/` lets the build run without a Rust toolchain.
+The committed `wasm-rvx/` lets the build run without a Rust toolchain. The repo's `.vercelignore`
+keeps local working notes and build artifacts out of the upload.
 
 ## The WASM engine
 

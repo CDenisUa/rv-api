@@ -11,7 +11,7 @@ import { RvBuilder } from '@/components/RvBuilder'
 // Hooks
 import { useSampler } from '@/hooks/useSampler'
 // Services
-import { capabilities, logProb, moments, parseDocument, type Capabilities, type RVNode } from 'rvx'
+import { capabilities, logProb, moments, parseDocument, DISCRETE_DISTS, type Capabilities, type RVNode } from 'rvx'
 // Utils
 import { buildDocument } from '@/lib/build-doc'
 import { curve, histogram, sampleRange } from '@/lib/histogram'
@@ -47,6 +47,20 @@ function analyze(doc: unknown): Analysis {
 
 const SAMPLE_SIZES = [10_000, 50_000, 200_000]
 
+/** Discrete RVs carry probability mass, not density - the analytic overlay would be misleading. */
+function containsDiscrete(node: RVNode): boolean {
+  switch (node.kind) {
+    case 'leaf':
+      return DISCRETE_DISTS.has(node.dist)
+    case 'joint':
+      return node.dims.some(containsDiscrete)
+    case 'mixture':
+      return node.components.some(containsDiscrete)
+    case 'transform':
+      return containsDiscrete(node.base)
+  }
+}
+
 export function Studio() {
   const [state, setState] = useState(PRESETS[0].state)
   const [n, setN] = useState(50_000)
@@ -61,11 +75,12 @@ export function Studio() {
 
   const range = useMemo(() => (samples ? sampleRange(samples) : { min: 0, max: 1 }), [samples])
   const bins = useMemo(() => (samples ? histogram(samples, range) : []), [samples, range])
+  const isDiscrete = useMemo(() => (analysis.node ? containsDiscrete(analysis.node) : false), [analysis])
   const densityCurve = useMemo(() => {
-    if (!analysis.node || !analysis.caps?.can_log_prob) return []
+    if (!analysis.node || !analysis.caps?.can_log_prob || isDiscrete) return []
     const node = analysis.node
     return curve(range, 160, (x) => Math.exp(logProb(node, x)))
-  }, [analysis, range])
+  }, [analysis, range, isDiscrete])
 
   return (
     <div className="space-y-5">
@@ -141,7 +156,11 @@ export function Studio() {
                 Histogram drawn from {n.toLocaleString()} samples in a Web Worker (seed {seed}) by the{' '}
                 <span className="text-slate-300">{engine === 'wasm' ? 'Rust core (WebAssembly)' : 'TypeScript engine'}</span>.
                 The amber curve is the analytic density from the TypeScript engine
-                {analysis.caps?.can_log_prob ? ' - switch engines and the histogram is unchanged.' : ' - unavailable for this RV, so only the histogram is shown.'}
+                {isDiscrete
+                  ? ' - hidden for discrete RVs (log_prob is a probability mass, not a density).'
+                  : analysis.caps?.can_log_prob
+                    ? ' - switch engines and the histogram is unchanged.'
+                    : ' - unavailable for this RV, so only the histogram is shown.'}
               </p>
             </>
           )}

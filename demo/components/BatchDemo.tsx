@@ -4,18 +4,45 @@
 // RV documents, then read/import those same documents in another language runtime (Rust/WASM).
 
 // Core
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 // Components
 import { JsonPreview } from '@/components/JsonPreview'
 // Services
 import { capabilities, moments, parseDocument, toDocument } from 'rvx'
-import { BATCH_ITEMS, buildRvListBundle, type BatchRvType } from '@/lib/batch-docs'
+import { BATCH_ITEMS, buildRvListBundle, type BatchItem, type BatchRvType } from '@/lib/batch-docs'
 import { canonicalText, canonicalize } from '@/lib/canonical-json'
 import { SamplerClient } from '@/lib/worker-client'
 // Utils
 import { fmt, fmtMoment } from '@/lib/format'
 
 const SAMPLE_N = 12_000
+
+interface BatchSource {
+  /** 'built-in' for the TypeScript-written list, otherwise the uploaded file name. */
+  name: string
+  /** Producer language declared by an uploaded bundle (e.g. "Python"). */
+  producer?: string
+  items: BatchItem[]
+}
+
+const BUILT_IN: BatchSource = { name: 'built-in', items: BATCH_ITEMS }
+
+/** Parse an uploaded `.rv-list.json` bundle into batch items (throws on a malformed bundle). */
+function parseBundle(text: string, fileName: string): BatchSource {
+  const bundle = JSON.parse(text) as Record<string, unknown>
+  if (bundle['kind'] !== 'rv_list' || !Array.isArray(bundle['items'])) {
+    throw new Error('not an .rv-list.json bundle (expected kind="rv_list" with items[])')
+  }
+  const items: BatchItem[] = (bundle['items'] as Record<string, unknown>[]).map((it, i) => ({
+    id: String(it['id'] ?? `item_${i}`),
+    label: String(it['label'] ?? it['id'] ?? `item ${i}`),
+    type: it['type'] === 'discrete' ? 'discrete' : 'continuous',
+    doc: it['document'] as BatchItem['doc'],
+  }))
+  if (items.length === 0) throw new Error('bundle has no items')
+  const producer = (bundle['producer'] as Record<string, unknown> | undefined)?.['language']
+  return { name: fileName, ...(producer ? { producer: String(producer) } : {}), items }
+}
 
 interface ExportRow {
   id: string
@@ -34,8 +61,8 @@ interface RustImport {
   error?: string
 }
 
-function buildRows(): ExportRow[] {
-  return BATCH_ITEMS.map((item) => {
+function buildRows(batchItems: BatchItem[]): ExportRow[] {
+  return batchItems.map((item) => {
     try {
       const node = parseDocument(item.doc)
       const doc = toDocument(node, { metadata: item.doc.metadata })
@@ -72,7 +99,10 @@ function buildRows(): ExportRow[] {
 
 export function BatchDemo() {
   const [seed, setSeed] = useState(4242)
-  const rows = useMemo(() => buildRows(), [])
+  const [source, setSource] = useState<BatchSource>(BUILT_IN)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const rows = useMemo(() => buildRows(source.items), [source])
   const bundle = useMemo(
     () =>
       buildRvListBundle(
@@ -96,7 +126,7 @@ export function BatchDemo() {
       rows.map(async (row, index) => {
         if (row.error) return [row.id, { status: 'error', error: row.error } satisfies RustImport] as const
         try {
-          const res = await client.sample(row.document, SAMPLE_N, seed + index * 101, 'wasm')
+          const res = await client.sample(row.document, SAMPLE_N, seed + index * 101, 'wasm', 0)
           return [
             row.id,
             {
@@ -123,17 +153,57 @@ export function BatchDemo() {
   const exportedText = canonicalText(bundle)
   const okCount = Object.values(imports).filter((r) => r.status === 'ok').length
 
+  function onUpload(file: File) {
+    file
+      .text()
+      .then((text) => {
+        setSource(parseBundle(text, file.name))
+        setUploadError(null)
+      })
+      .catch((e) => setUploadError(e instanceof Error ? e.message : String(e)))
+  }
+
   return (
     <section className="space-y-4 rounded-2xl bg-slate-900/40 p-4 ring-1 ring-slate-800 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-white">Batch export/import</h2>
           <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
-            TypeScript builds a mixed list of RV documents, writes the canonical export bundle, and the
-            Rust WebAssembly engine reads the same documents in a worker.
+            TypeScript builds a mixed list of RV documents (discrete and continuous), writes the
+            canonical export bundle, and the Rust WebAssembly engine reads the same documents in a
+            worker. Or upload an <code className="text-slate-300">.rv-list.json</code> written by
+            another language - e.g. the Python writer in{' '}
+            <code className="text-slate-300">demo/cli/write_rv_list.py</code>.
           </p>
+          <p className="mt-1 text-xs text-slate-500">
+            source: <span className="text-slate-300">{source.name}</span>
+            {source.producer ? <> · written by <span className="text-slate-300">{source.producer}</span></> : null}
+            {source.name !== 'built-in' ? (
+              <button onClick={() => { setSource(BUILT_IN); setUploadError(null) }} className="ml-2 text-sky-400 hover:text-sky-300">
+                reset to built-in
+              </button>
+            ) : null}
+          </p>
+          {uploadError ? <p className="mt-1 text-xs text-red-300">upload failed: {uploadError}</p> : null}
         </div>
         <div className="flex flex-wrap justify-start gap-2 sm:justify-end">
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) onUpload(file)
+              e.target.value = ''
+            }}
+          />
+          <button
+            onClick={() => fileInput.current?.click()}
+            className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-slate-700 hover:bg-slate-700"
+          >
+            upload list
+          </button>
           <button
             onClick={() => setSeed((s) => s + 1)}
             className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-slate-700 hover:bg-slate-700"
@@ -188,8 +258,9 @@ export function BatchDemo() {
             </tbody>
           </table>
           <p className="mt-3 text-xs text-slate-500">
-            {okCount}/{rows.length} documents imported by Rust/WASM from the TypeScript-written export
-            bundle (n={SAMPLE_N.toLocaleString()}, seed {seed}).
+            {okCount}/{rows.length} documents imported by Rust/WASM from the{' '}
+            {source.name === 'built-in' ? 'TypeScript-written' : `uploaded (${source.name})`} bundle
+            (n={SAMPLE_N.toLocaleString()}, seed {seed}). Joint rows show dimension 0.
           </p>
         </div>
 

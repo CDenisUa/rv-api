@@ -20,9 +20,9 @@ export class SamplerClient {
     }
   }
 
-  sample(doc: unknown, n: number, seed: number, engine: Engine): Promise<SampleResponse> {
+  sample(doc: unknown, n: number, seed: number, engine: Engine, dim = 0): Promise<SampleResponse> {
     const id = ++this.seq
-    const request: SampleRequest = { id, doc, n, seed, engine }
+    const request: SampleRequest = { id, doc, n, seed, engine, dim }
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject })
       this.worker.postMessage(request)

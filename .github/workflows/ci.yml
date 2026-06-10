@@ -74,7 +74,11 @@ jobs:
           node-version: '20'
           cache: pnpm
           cache-dependency-path: demo/pnpm-lock.yaml
-      # `file:../generated/impl/typescript` links the rvx engine and pnpm pulls in its deps (zod).
+      # `file:../generated/impl/typescript` links the rvx engine; tsc type-checks the linked
+      # sources at their real path, so rvx's own production deps (zod) must be installed too.
+      - name: Install rvx production deps
+        working-directory: generated/impl/typescript
+        run: npm install --omit=dev
       - name: Install
         working-directory: demo
         run: pnpm install --frozen-lockfile
@@ -101,3 +105,8 @@ jobs:
         run: npm ci
       - name: Generate evidence pack (exits non-zero on any cross-language mismatch > 1e-9)
         run: PYTHONPATH=generated/impl/python/src python evidence/build_evidence.py
+      - name: Headless cross-language demo (Python writes, TypeScript + Rust read)
+        run: |
+          PYTHONPATH=generated/impl/python/src python demo/cli/write_rv_list.py
+          npx tsx demo/cli/read_rv_list.ts demo/cli/rv-batch.rv-list.json
+          cargo run --manifest-path generated/impl/rust/Cargo.toml --example read_rv_list -- demo/cli/rv-batch.rv-list.json

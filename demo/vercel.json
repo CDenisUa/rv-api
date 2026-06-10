@@ -1,0 +1,4 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pnpm install && npm install --omit=dev --prefix ../generated/impl/typescript"
+}

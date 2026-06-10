@@ -1,7 +1,7 @@
 {
   "format_version": "1.1.0",
   "metadata": {
-    "name": "gamma_basic"
+    "name": "binomial_qc"
   },
   "rv": {
     "capabilities": {
@@ -9,11 +9,11 @@
       "can_log_prob": true,
       "can_sample": true
     },
-    "dist": "gamma",
+    "dist": "binomial",
     "kind": "leaf",
     "params": {
-      "scale": 2.0,
-      "shape": 2.0
+      "n": 20,
+      "p": 0.15
     }
   }
 }

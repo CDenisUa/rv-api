@@ -58,9 +58,14 @@ Use these canonical, library-independent parameter names:
 | `gamma` | `shape`, `scale` | both `> 0` |
 | `beta` | `alpha`, `beta` | both `> 0` |
 | `categorical` | `categories[]`, `probs[]` | aligned, `probs >= 0`, sum to 1 |
+| `poisson` | `rate` | `rate > 0` |
+| `binomial` | `n`, `p` | `n` integer `>= 1`, `0 < p < 1` |
 | `empirical` | `samples` (`bulk_ref`) | 1-D numeric array |
 
-`categorical` is discrete. Its CDF is defined over numeric categories sorted ascending. `empirical`
+`categorical`, `poisson`, and `binomial` are discrete: log probability is a log-mass. The
+categorical CDF is defined over numeric categories sorted ascending. For the integer-valued leaves
+(`poisson`, `binomial`) a query `x` snaps to `k = round(x)` when `|x - round(x)| <= 1e-9` and has
+log probability `-inf` otherwise; CDF evaluates at the floor of the snapped value. `empirical`
 uses deterministic KDE for log probability and empirical CDF for CDF.
 
 ### Transform catalog
@@ -93,7 +98,13 @@ Include formulas in both `SPEC.md` and `rv.schema.json` under `x-rvx-semantics`:
 - Joint: log probability is the sum of child log probabilities; CDF is product of child CDFs.
 - Mixture: use stable logsumexp of `log(weight_i) + log_prob_i(x)`; sample by component weights.
 - Transform: use change of variables
-  `log p_Y(y) = log p_X(g^-1(y)) + log |d g^-1 / dy|`.
+  `log p_Y(y) = log p_X(g^-1(y)) + log |d g^-1 / dy|`. This applies to densities only, so a
+  transform whose base subtree contains a discrete leaf is invalid and MUST be rejected during
+  semantic validation.
+- Poisson: `log p(k) = k*log(rate) - rate - lgamma(k+1)`; CDF via the regularized lower incomplete
+  gamma, `1 - P(floor(x)+1, rate)`.
+- Binomial: `log p(k) = lgamma(n+1) - lgamma(k+1) - lgamma(n-k+1) + k*log(p) + (n-k)*log(1-p)`;
+  CDF via the regularized incomplete beta, `I_(1-p)(n-k, k+1)` with `k = floor(x)`.
 - Empirical: Gaussian KDE with Scott bandwidth `h = n^(-1/5) * sample_stddev`, empirical CDF, bootstrap
   or quantile sampling.
 
@@ -108,7 +119,8 @@ Specify two stages:
 
 1. JSON Schema structural validation.
 2. Semantic validation: parameter constraints, mixture/categorical weights and alignment, support
-   consistency, capability recomputation, and format major version check.
+   consistency, rejection of transforms over discrete bases, capability recomputation, and format
+   major version check.
 
 ### Canonical form
 

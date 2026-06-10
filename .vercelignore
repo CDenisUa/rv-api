@@ -1,0 +1,19 @@
+# Private working notes - never upload (excluded from git via .git/info/exclude, which Vercel ignores)
+.kb
+
+# Local/build artifacts
+.git
+node_modules
+.next
+.pnpm-store
+target
+__pycache__
+.pytest_cache
+.hypothesis
+generated/.live
+demo/cli/rv-batch.rv-list.json
+.env
+.env.*
+.playwright-mcp
+.DS_Store
+*.tsbuildinfo

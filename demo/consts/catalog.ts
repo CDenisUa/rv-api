@@ -12,6 +12,8 @@ export interface DistSpec {
   name: string
   label: string
   params: ParamSpec[]
+  /** Discrete leaves: log_prob is a mass, so the density overlay is hidden and transforms reject them. */
+  discrete?: boolean
 }
 
 export interface OpSpec {
@@ -30,6 +32,8 @@ export const DISTRIBUTIONS: DistSpec[] = [
   { name: 'exponential', label: 'Exponential', params: [p('rate', 'rate λ', 1.5, 0.1)] },
   { name: 'gamma', label: 'Gamma', params: [p('shape', 'shape k', 2, 0.5), p('scale', 'scale θ', 2, 0.5)] },
   { name: 'beta', label: 'Beta', params: [p('alpha', 'α', 2, 0.5), p('beta', 'β', 5, 0.5)] },
+  { name: 'poisson', label: 'Poisson (discrete)', discrete: true, params: [p('rate', 'rate λ', 3.5, 0.5)] },
+  { name: 'binomial', label: 'Binomial (discrete)', discrete: true, params: [p('n', 'n trials', 20, 1), p('p', 'p success', 0.15, 0.05)] },
 ]
 
 export const OPS: OpSpec[] = [

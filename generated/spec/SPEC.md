@@ -109,6 +109,10 @@ Semantic rules (enforced beyond JSON Schema):
 - `weights.length === components.length`.
 - every `weight ≥ 0` and `Σ weights == 1` within tolerance `1e-9` (§10).
 
+A mixture MAY combine discrete and continuous components; it is then a mixed measure and its
+`log_prob` mixes masses with densities. Producers SHOULD avoid such mixtures unless the consumer is
+known to interpret them deliberately.
+
 ### 4.4 Transform - deterministic transformation
 
 ```json
@@ -117,6 +121,10 @@ Semantic rules (enforced beyond JSON Schema):
 
 Represents `Y = op(X)` where `X` is `base`. The op is applied elementwise. See §5.3 for the op
 catalog and §8 for how each op affects `log_prob` (change-of-variables) and capabilities.
+
+The base of a transform MUST be **continuous**: a transform whose base subtree contains a discrete
+leaf (`categorical`, `poisson`, `binomial`) is invalid in v1, because the change-of-variables
+formula (§8.4) applies to densities, not probability masses. Validators MUST reject such documents.
 
 ---
 
@@ -134,7 +142,14 @@ catalog and §8 for how each op affects `log_prob` (change-of-variables) and cap
 | `gamma`       | `shape`, `scale`                | `shape > 0`, `scale > 0`     | (0, +∞)         |
 | `beta`        | `alpha`, `beta`                 | `alpha > 0`, `beta > 0`      | [0, 1]          |
 | `categorical` | `categories[]`, `probs[]`       | aligned; `probs ≥ 0`, Σ = 1  | the categories  |
+| `poisson`     | `rate`                          | `rate > 0`                   | {0, 1, 2, …}    |
+| `binomial`    | `n`, `p`                        | `n` integer ≥ 1, `0 < p < 1` | {0, 1, …, n}    |
 | `empirical`   | `samples` (bulk_ref)            | 1-D numeric array            | data range      |
+
+`categorical`, `poisson`, and `binomial` are **discrete**: `log_prob` is a log-**mass**, not a
+log-density. For the integer-valued leaves (`poisson`, `binomial`) a query `x` is treated as the
+integer `k = round(x)` when `|x − round(x)| ≤ 1e-9`; any other non-integer `x` has `log_prob = −∞`.
+`cdf` evaluates at the floor of the snapped value.
 
 `lognormal` is parameterized by the **mean and std-dev of the underlying normal in log-space**
 (`mu`, `sigma`), i.e. `log(X) ~ Normal(mu, sigma)`. This intentionally differs from scipy's
@@ -151,6 +166,8 @@ catalog and §8 for how each op affects `log_prob` (change-of-variables) and cap
 | `exponential` | `rate`                  | `expon(scale=1/rate)`                              |
 | `gamma`       | `shape`, `scale`        | `gamma(a=shape, scale=scale)`                      |
 | `beta`        | `alpha`, `beta`         | `beta(a=alpha, b=beta)`                            |
+| `poisson`     | `rate`                  | `poisson(mu=rate)`                                 |
+| `binomial`    | `n`, `p`                | `binom(n=n, p=p)`                                  |
 
 ### 5.3 Transform ops
 
@@ -184,6 +201,8 @@ underlying distribution.
    - Mixture/categorical weight & alignment rules (§4.3, §5.1).
    - Parameter constraints (§5.1) - already largely encoded in schema, but re-checked.
    - Support consistency (§6.1).
+   - **Continuous transform bases** - a transform whose base subtree contains a discrete leaf is
+     rejected (§4.4).
    - **Capability consistency** - recompute capabilities (§7) and reject if they contradict the
      declared `capabilities`.
 
@@ -199,6 +218,7 @@ A document that passes stage 1 but fails stage 2 is **invalid**.
 - **Leaf**
   - analytic (`normal`…`beta`): `can_sample = can_log_prob = can_cdf = true`.
   - `categorical`: `can_sample = can_log_prob = can_cdf = true` (cdf over ordered categories).
+  - `poisson`, `binomial`: `can_sample = can_log_prob = can_cdf = true` (log-mass + closed-form cdf).
   - `empirical`: `can_sample = true`; `can_log_prob = true` (via KDE, §8.5); `can_cdf = true`
     (empirical CDF).
 - **Joint** - each capability is the **AND** over all `dims`. (`can_cdf` is the AND, interpreted
@@ -219,7 +239,14 @@ from its children by these rules.
 All densities are evaluated in **log-space**.
 
 ### 8.1 Leaf - closed forms
-Standard log-pdf / log-pmf for each `dist` in §5.1.
+Standard log-pdf / log-pmf for each `dist` in §5.1. For the integer-valued discrete leaves
+(with the integer-snap rule of §5.1 applied first):
+
+- `poisson(rate)`: `log p(k) = k·log(rate) − rate − lgamma(k+1)` for integer `k ≥ 0`, else `−∞`;
+  `cdf(x) = 1 − P(⌊x⌋+1, rate)` for `x ≥ 0` (regularized lower incomplete gamma `P`), else `0`.
+- `binomial(n, p)`: `log p(k) = lgamma(n+1) − lgamma(k+1) − lgamma(n−k+1) + k·log(p) + (n−k)·log(1−p)`
+  for integer `0 ≤ k ≤ n`, else `−∞`; `cdf(x) = I_{1−p}(n−⌊x⌋, ⌊x⌋+1)` for `0 ≤ x < n`
+  (regularized incomplete beta `I`), `0` below, `1` at or above `n`.
 
 ### 8.2 Joint - independence
 `log p(x₁,…,x_d) = Σ_i log p_i(x_i)`. Sampling: sample each dim independently.
@@ -244,6 +271,9 @@ For an invertible, differentiable `y = g(x)` with inverse `x = g⁻¹(y)`:
 
 Sampling always works: draw `x` from base, return `g(x)`.
 
+Change-of-variables is defined for **densities** only; transforms over discrete bases are invalid
+(§4.4) and never reach this formula.
+
 ### 8.5 Empirical - KDE
 `log_prob` for `empirical` leaves uses **Gaussian kernel density estimation** with **Scott's-rule**
 bandwidth `h = n^(−1/(d+4))·σ̂` (d = 1 here), `σ̂` the sample std-dev. This makes empirical log-prob
@@ -262,6 +292,8 @@ references implement the mandatory `base64` baseline and reject `npy`.)
 |---------------------|--------------------------------------------|------------------------------------|
 | Leaf analytic       | O(1)                                       | O(1)                               |
 | Leaf categorical    | O(1) (alias) after O(k) build              | O(k) (tolerance match over k cats) |
+| Leaf poisson        | O(rate) expected (exponential arrivals)    | O(1)                               |
+| Leaf binomial       | O(n) (Bernoulli sum)                       | O(1)                               |
 | Leaf empirical (n)  | O(1) draw (alias) / O(log n) inv-CDF       | O(n) per query (KDE)               |
 | Joint (d dims)      | O(d) + children                            | O(d) + children                    |
 | Mixture (k comps)   | O(n + k) for n draws (bucket) + children   | O(k) + children (logsumexp)        |
@@ -282,6 +314,10 @@ sampling each child once, so drawing `n` values is O(n + k) (plus child cost), n
   unknown names but MUST do so explicitly (no silent misinterpretation).
 - **MAJOR** - breaking change.
 - A consumer MUST reject a document whose MAJOR exceeds the version it implements.
+
+History: **1.1.0** adds the discrete leaves `poisson` and `binomial` and the continuous-base rule
+for transforms (§4.4) - a MINOR, backward-compatible addition; documents written as `1.0.0` remain
+valid.
 
 ---
 

@@ -30,6 +30,9 @@ next-env.d.ts
 # Live pipeline scratch output (canonical artifacts live in generated/spec + generated/impl)
 generated/.live/
 
+# Headless demo build artifact (regenerate with demo/cli/write_rv_list.py)
+demo/cli/rv-batch.rv-list.json
+
 # Local browser verification artifacts
 .playwright-mcp/
 

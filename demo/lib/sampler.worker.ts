@@ -13,26 +13,27 @@ import type { SampleRequest, SampleResponse } from '@/types/rv-form'
 
 // Lazily import the WASM package only when first requested, so the Rust core isn't downloaded
 // unless the user switches engines.
-let wasmSample: ((docJson: string, seed: number, n: number) => Float64Array) | null = null
+let wasmSampleDim: ((docJson: string, seed: number, n: number, dim: number) => Float64Array) | null = null
 async function loadWasm() {
-  if (!wasmSample) {
+  if (!wasmSampleDim) {
     const mod = await import('../wasm-rvx/rvx.js')
-    wasmSample = mod.rv_sample
+    wasmSampleDim = mod.rv_sample_dim
   }
-  return wasmSample
+  return wasmSampleDim
 }
 
-function sampleTs(doc: unknown, n: number, seed: number): Float64Array {
+function sampleTs(doc: unknown, n: number, seed: number, dim: number): Float64Array {
   const node = parseDocument(doc)
   const drawn = sample(node, new RNG(seed), n)
-  // The builder only produces univariate RVs; for a joint, visualize the first dimension.
-  return drawn instanceof Float64Array ? drawn : drawn[0]
+  // For a Joint, visualize the requested dimension (default 0).
+  return drawn instanceof Float64Array ? drawn : drawn[dim]
 }
 
 self.onmessage = async (event: MessageEvent<SampleRequest>) => {
-  const { id, doc, n, seed, engine } = event.data
+  const { id, doc, n, seed, engine, dim = 0 } = event.data
   try {
-    const xs = engine === 'wasm' ? (await loadWasm())(JSON.stringify(doc), seed, n) : sampleTs(doc, n, seed)
+    const xs =
+      engine === 'wasm' ? (await loadWasm())(JSON.stringify(doc), seed, n, dim) : sampleTs(doc, n, seed, dim)
 
     let sum = 0
     for (const x of xs) sum += x

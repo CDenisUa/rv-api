@@ -50,6 +50,42 @@ export const BATCH_ITEMS: BatchItem[] = [
     },
   },
   {
+    id: 'poisson_defects',
+    label: 'Poisson defect count',
+    type: 'discrete',
+    doc: {
+      format_version: '1.1.0',
+      metadata: { name: 'defects_per_specimen' },
+      rv: { kind: 'leaf', dist: 'poisson', params: { rate: 3.5 } },
+    },
+  },
+  {
+    id: 'binomial_qc',
+    label: 'Binomial QC failures (n=20)',
+    type: 'discrete',
+    doc: {
+      format_version: '1.1.0',
+      metadata: { name: 'qc_failures_in_batch' },
+      rv: { kind: 'leaf', dist: 'binomial', params: { n: 20, p: 0.15 } },
+    },
+  },
+  {
+    id: 'joint_thickness_temp',
+    label: 'Joint: thickness × temperature (dim 0 shown)',
+    type: 'continuous',
+    doc: {
+      format_version: '1.1.0',
+      metadata: { name: 'coating_thickness_and_temp', units: 'um, K' },
+      rv: {
+        kind: 'joint',
+        dims: [
+          { kind: 'leaf', dist: 'lognormal', params: { mu: 2.3, sigma: 0.25 } },
+          { kind: 'leaf', dist: 'normal', params: { mu: 293, sigma: 4 } },
+        ],
+      },
+    },
+  },
+  {
     id: 'mixture_bimodal',
     label: 'Bimodal grain size',
     type: 'continuous',

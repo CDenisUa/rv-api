@@ -34,7 +34,10 @@ Provide an idiomatic library that:
 
 Prove conformance by including tests that load every case under `conformance/cases/*.rv.json`, compare
 against `conformance/golden/*.json`, and assert deterministic outputs within absolute `1e-9`.
-Sampling tests should use the per-case statistical tolerances from the golden files.
+Sampling tests should use the per-case statistical tolerances from the golden files. The conformance
+fixtures are a runtime **test oracle** provided by the environment the generated code runs in - they
+are not part of the format definition; `rv.schema.json` remains the only RV-format input to this
+prompt.
 
 The code MUST run as-is: no placeholders, no stubs, no `...` bodies, and no references to files you did
 not emit.

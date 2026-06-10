@@ -1,0 +1,24 @@
+{
+  "what": "Provenance of the canonical artifact set under generated/ (spec + three implementations).",
+  "how_produced": "Outputs of the two-prompt pipeline (pipeline/prompts/ via pipeline/run.py), iteratively refined and frozen once they passed the conformance oracle. They are the replay (offline) half of the live/replay duality: a live run regenerates a fresh set under generated/.live/ together with its own machine-written PROVENANCE.json (backend, model, UTC timestamp, prompt SHA-256 hashes, files, token usage).",
+  "prompts": {
+    "01-generate-spec.md": "sha256:3780c785de7beb70e66d020bf02939eff71a064c7f199dbf28d03b9717ffad17",
+    "02-generate-impl.md": "sha256:460aa7954e2372e197abad520e8ad44ca74c797127216034c551ac2dd110f499"
+  },
+  "machine_readable_handoff": {
+    "file": "spec/rv.schema.json",
+    "sha256": "baf9fef84bb66a78c93e78f31875fe407490021221fb8c23571eacfa0f9b01ba",
+    "note": "the only RV-format input Prompt #2 receives"
+  },
+  "oracle": "conformance/: 21 language-neutral cases + golden values. Every implementation (canonical or freshly generated) is accepted only if it reproduces all deterministic golden values within an absolute 1e-9 and passes the statistical sampling tolerances. evidence/EVIDENCE.md is the generated 3x21 cross-language matrix.",
+  "regenerate": {
+    "spec": "python3 pipeline/run.py spec",
+    "one_implementation": "python3 pipeline/run.py impl python|typescript|rust",
+    "everything": "python3 pipeline/run.py all",
+    "backends": "Claude Code CLI (subscription auth) or the Anthropic API via ANTHROPIC_API_KEY (--backend api)"
+  },
+  "environment": {
+    "claude_code_cli": "2.1.170",
+    "default_model_alias": "sonnet"
+  }
+}

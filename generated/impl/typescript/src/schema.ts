@@ -59,6 +59,8 @@ const PARAM_SCHEMAS: Record<string, z.ZodTypeAny> = {
       probs: z.array(z.number().nonnegative()).min(1),
     })
     .strict(),
+  poisson: z.object({ rate: z.number().positive() }).strict(),
+  binomial: z.object({ n: z.number().int().min(1), p: z.number().gt(0).lt(1) }).strict(),
   empirical: z.object({ samples: zBulkRef }).strict(),
 }
 
