@@ -183,10 +183,12 @@
       "Validate against this JSON Schema.",
       "Reject format_version whose MAJOR exceeds implemented major.",
       "Recheck all parameter constraints.",
+      "Reject a transform op carrying params other than those listed in transform_ops (exp/log/abs take none); unexpected op params MUST NOT be silently ignored.",
       "Check mixture and categorical weight/probability sums and alignment.",
       "Check support declarations do not extend beyond natural support.",
       "Reject transform nodes whose base subtree contains a discrete leaf (see discrete_evaluation).",
       "Recompute capabilities and reject declared mismatches.",
+      "Reject a bulk_ref whose decoded element count does not equal the product of its declared shape, or whose decoded byte length is not a multiple of the dtype item size.",
       "Reject unsupported optional bulk transports explicitly."
     ]
   },
@@ -534,6 +536,16 @@
                 }
               }
             }
+          }
+        },
+        {
+          "if": {
+            "required": ["name"],
+            "properties": { "name": { "enum": ["exp", "log", "abs"] } }
+          },
+          "then": {
+            "not": { "required": ["params"] },
+            "description": "exp/log/abs are parameterless; carrying a params object is invalid."
           }
         }
       ]

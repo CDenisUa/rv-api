@@ -10,7 +10,7 @@
     "sha256": "baf9fef84bb66a78c93e78f31875fe407490021221fb8c23571eacfa0f9b01ba",
     "note": "the only RV-format input Prompt #2 receives"
   },
-  "oracle": "conformance/: 21 language-neutral cases + golden values. Every implementation (canonical or freshly generated) is accepted only if it reproduces all deterministic golden values within an absolute 1e-9 and passes the statistical sampling tolerances. evidence/EVIDENCE.md is the generated 3x21 cross-language matrix.",
+  "oracle": "conformance/: 21 language-neutral cases + golden values, plus conformance/invalid/ (9 negative fixtures every reader MUST reject). Every implementation (canonical or freshly generated) is accepted only if it reproduces all deterministic golden values within an absolute 1e-9, passes the statistical sampling tolerances, and rejects every negative fixture. evidence/EVIDENCE.md is the generated 3x21 cross-language matrix.",
   "regenerate": {
     "spec": "python3 pipeline/run.py spec",
     "one_implementation": "python3 pipeline/run.py impl python|typescript|rust",

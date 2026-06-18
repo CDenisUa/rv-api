@@ -26,27 +26,56 @@ pub fn decode(reference: &Value) -> Result<Vec<f64>> {
     let bytes = STANDARD
         .decode(data)
         .map_err(|e| RvError::Validation(format!("invalid base64: {e}")))?;
-    decode_le(&bytes, dtype)
+    let values = decode_le(&bytes, dtype)?;
+    // A decoded bulk_ref MUST be self-consistent (SPEC.md §8.5): the element count must equal the
+    // product of the declared shape - reject a mismatch rather than silently misread the buffer.
+    if let Some(shape) = reference.get("shape").and_then(Value::as_array) {
+        let expected: usize = shape
+            .iter()
+            .filter_map(Value::as_u64)
+            .map(|x| x as usize)
+            .product();
+        if values.len() != expected {
+            return Err(RvError::Validation(format!(
+                "bulk_ref element count {} does not match shape product {expected}",
+                values.len()
+            )));
+        }
+    }
+    Ok(values)
 }
 
 fn decode_le(bytes: &[u8], dtype: Option<&str>) -> Result<Vec<f64>> {
-    match dtype {
-        Some("float64") => Ok(bytes
+    let size = match dtype {
+        Some("float64") | Some("int64") => 8,
+        Some("float32") | Some("int32") => 4,
+        other => return Err(RvError::Validation(format!("unsupported bulk dtype: {other:?}"))),
+    };
+    // Reject a buffer that is not a whole number of dtype-sized elements rather than dropping the
+    // remainder (chunks_exact would otherwise silently truncate).
+    if !bytes.len().is_multiple_of(size) {
+        return Err(RvError::Validation(format!(
+            "bulk_ref byte length {} is not a multiple of dtype size {size}",
+            bytes.len()
+        )));
+    }
+    Ok(match dtype {
+        Some("float64") => bytes
             .chunks_exact(8)
             .map(|c| f64::from_le_bytes(c.try_into().unwrap()))
-            .collect()),
-        Some("float32") => Ok(bytes
+            .collect(),
+        Some("float32") => bytes
             .chunks_exact(4)
             .map(|c| f32::from_le_bytes(c.try_into().unwrap()) as f64)
-            .collect()),
-        Some("int32") => Ok(bytes
+            .collect(),
+        Some("int32") => bytes
             .chunks_exact(4)
             .map(|c| i32::from_le_bytes(c.try_into().unwrap()) as f64)
-            .collect()),
-        Some("int64") => Ok(bytes
+            .collect(),
+        Some("int64") => bytes
             .chunks_exact(8)
             .map(|c| i64::from_le_bytes(c.try_into().unwrap()) as f64)
-            .collect()),
-        other => Err(RvError::Validation(format!("unsupported bulk dtype: {other:?}"))),
-    }
+            .collect(),
+        _ => unreachable!("dtype size already validated above"),
+    })
 }

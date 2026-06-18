@@ -1,0 +1,27 @@
+{
+  "format_version": "1.1.0",
+  "rv": {
+    "components": [
+      {
+        "dist": "normal",
+        "kind": "leaf",
+        "params": {
+          "mu": 0.0,
+          "sigma": 1.0
+        }
+      },
+      {
+        "dist": "normal",
+        "kind": "leaf",
+        "params": {
+          "mu": 5.0,
+          "sigma": 1.0
+        }
+      }
+    ],
+    "kind": "mixture",
+    "weights": [
+      1.0
+    ]
+  }
+}

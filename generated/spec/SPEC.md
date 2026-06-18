@@ -181,6 +181,10 @@ integer `k = round(x)` when `|x − round(x)| ≤ 1e-9`; any other non-integer `
 
 `abs` is deliberately included as a non-invertible op to demonstrate honest capability degradation.
 
+Each op accepts exactly the params in the table above and no others: `exp`, `log`, and `abs` take
+**no** params. A consumer MUST reject an op carrying an unexpected param key rather than silently
+ignore it; a malformed (or machine-generated) op MUST NOT be misread as a valid one.
+
 ---
 
 ## 6. Support and validation
@@ -285,6 +289,11 @@ the **mandatory baseline** - every conforming consumer MUST decode it. The `.npy
 **OPTIONAL**: a consumer MAY support it, and one that does not MUST reject an `npy` `bulk_ref` with an
 explicit error rather than misread it. (The Python reference reads both; the TypeScript and Rust
 references implement the mandatory `base64` baseline and reject `npy`.)
+
+A decoded `bulk_ref` MUST be self-consistent: the decoded byte length MUST be a whole multiple of the
+`dtype` item size, and the number of decoded elements MUST equal the product of the declared `shape`.
+A consumer MUST reject a `bulk_ref` that fails either check rather than silently truncate or misread
+the buffer.
 
 ### 8.6 Complexity (Big-O)
 

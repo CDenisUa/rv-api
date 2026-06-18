@@ -18,6 +18,19 @@ pub enum Op {
 
 impl Op {
     pub fn build(name: &str, params: &HashMap<String, f64>) -> Result<Op> {
+        // Exact set of params each op accepts. exp/log/abs take none; unexpected keys are rejected
+        // rather than silently ignored (SPEC.md §5.3) - a malformed op MUST NOT be misread.
+        let allowed: &[&str] = match name {
+            "affine" => &["a", "b"],
+            "pow" => &["exponent"],
+            "exp" | "log" | "abs" => &[],
+            other => return Err(RvError::Validation(format!("unknown transform op '{other}'"))),
+        };
+        if let Some(extra) = params.keys().find(|k| !allowed.contains(&k.as_str())) {
+            return Err(RvError::Validation(format!(
+                "op '{name}' got unexpected param '{extra}'"
+            )));
+        }
         let need = |k: &str| -> Result<f64> {
             params
                 .get(k)
@@ -30,7 +43,7 @@ impl Op {
             "log" => Ok(Op::Log),
             "pow" => Ok(Op::Pow { exponent: need("exponent")? }),
             "abs" => Ok(Op::Abs),
-            other => Err(RvError::Validation(format!("unknown transform op '{other}'"))),
+            _ => unreachable!("op name already validated above"),
         }
     }
 

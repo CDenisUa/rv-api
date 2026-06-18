@@ -9,11 +9,23 @@ mechanism that would validate any LLM-generated implementation.
 
 ```
 conformance/
-├── manifest.json        # index of all cases
+├── manifest.json        # index of all (positive) cases
 ├── generate.py          # regenerates cases + golden from scipy (the reference source of truth)
 ├── cases/<name>.rv.json # the RV document (input) - validates against generated/spec/rv.schema.json
-└── golden/<name>.json   # expected outputs for that case
+├── golden/<name>.json   # expected outputs for that case
+└── invalid/             # negative contract: documents every reader MUST reject
+    ├── manifest.json    #   index of invalid fixtures (name, doc, reason)
+    ├── generate_invalid.py
+    └── <name>.rv.json   #   one rejection rule each (op params, bulk self-consistency, weights, …)
 ```
+
+## Negative suite (`invalid/`)
+
+The golden suite proves the happy path; `invalid/` proves the rejection path. Each fixture is a
+document that **every** conforming reader MUST reject (structural or semantic validation). Error
+messages differ by language, so the contract is "rejected", not "rejected with message X". All three
+implementations load `invalid/manifest.json` and assert that parsing throws
+(`test_invalid_conformance.py`, `invalid.test.ts`, `invalid.rs`).
 
 ## Golden file shape
 

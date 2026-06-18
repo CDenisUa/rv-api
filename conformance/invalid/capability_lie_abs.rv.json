@@ -1,0 +1,22 @@
+{
+  "format_version": "1.1.0",
+  "rv": {
+    "base": {
+      "dist": "normal",
+      "kind": "leaf",
+      "params": {
+        "mu": 0.0,
+        "sigma": 1.0
+      }
+    },
+    "capabilities": {
+      "can_cdf": false,
+      "can_log_prob": true,
+      "can_sample": true
+    },
+    "kind": "transform",
+    "op": {
+      "name": "abs"
+    }
+  }
+}

@@ -78,6 +78,10 @@ uses deterministic KDE for log probability and empirical CDF for CDF.
 | `pow` | `y = x^p` | `exponent != 0` | yes on positive branch | yes on positive branch |
 | `abs` | `y = abs(x)` | none | no | no |
 
+Each op accepts exactly the params in this table and no others; `exp`, `log`, and `abs` take none.
+The schema MUST reject an op carrying an unexpected param key, and a consumer MUST NOT silently ignore
+extra op params.
+
 ### Operations
 
 Define the semantics of:
@@ -111,7 +115,10 @@ Include formulas in both `SPEC.md` and `rv.schema.json` under `x-rvx-semantics`:
 ### Bulk transport
 
 Define `bulk_ref` for empirical samples. Inline base64 little-endian raw buffers are mandatory.
-External `.npy` sidecars are optional; unsupported readers must reject them explicitly.
+External `.npy` sidecars are optional; unsupported readers must reject them explicitly. A decoded
+`bulk_ref` must be self-consistent: the decoded byte length must be a whole multiple of the `dtype`
+item size and the decoded element count must equal the product of the declared `shape`; a reader must
+reject a mismatch rather than truncate or misread.
 
 ### Validation
 

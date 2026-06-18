@@ -15,6 +15,14 @@ export interface BulkRef {
   data?: string
 }
 
+/** Byte size of each dtype's element, used to validate buffer length. */
+const DTYPE_SIZE: Record<BulkRef['dtype'], number> = {
+  float32: 4,
+  float64: 8,
+  int32: 4,
+  int64: 8,
+}
+
 /** Materialize an inline base64 bulk_ref into a Float64Array. */
 export function decodeBulk(ref: BulkRef): Float64Array {
   if (ref.format === 'npy') {
@@ -26,9 +34,27 @@ export function decodeBulk(ref: BulkRef): Float64Array {
   if (ref.data === undefined) {
     throw new ValidationError('base64 bulk_ref requires a "data" field')
   }
+  const itemSize = DTYPE_SIZE[ref.dtype]
+  if (itemSize === undefined) {
+    throw new ValidationError(`unsupported bulk dtype: ${String(ref.dtype)}`)
+  }
   const bytes = base64ToBytes(ref.data)
+  // A decoded bulk_ref MUST be self-consistent (SPEC.md §8.5): exact dtype multiple, and element
+  // count equal to the product of the declared shape - never silently truncate or misread.
+  if (bytes.byteLength % itemSize !== 0) {
+    throw new ValidationError(
+      `bulk_ref byte length ${bytes.byteLength} is not a multiple of dtype '${ref.dtype}' size ${itemSize}`,
+    )
+  }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  return readLittleEndian(view, ref.dtype)
+  const out = readLittleEndian(view, ref.dtype)
+  const expected = ref.shape.reduce((a, b) => a * b, 1)
+  if (out.length !== expected) {
+    throw new ValidationError(
+      `bulk_ref element count ${out.length} does not match shape ${JSON.stringify(ref.shape)} (expected ${expected})`,
+    )
+  }
+  return out
 }
 
 /** Encode a 1-D array as an inline base64 float64 bulk_ref (mirrors the Python encoder). */

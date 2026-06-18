@@ -21,6 +21,13 @@ def decode(ref: Mapping, *, base_dir: Optional[str] = None) -> np.ndarray:
         raise ValidationError(f"unsupported bulk dtype: {dtype!r}")
     if fmt == "base64":
         raw = base64.b64decode(ref["data"])
+        item_size = np.dtype(_DTYPE[dtype]).itemsize
+        # A decoded bulk_ref MUST be self-consistent (SPEC.md §8.5): whole dtype multiple, never a
+        # silently truncated buffer.
+        if len(raw) % item_size != 0:
+            raise ValidationError(
+                f"bulk_ref byte length {len(raw)} is not a multiple of dtype '{dtype}' "
+                f"size {item_size}")
         arr = np.frombuffer(raw, dtype=_DTYPE[dtype]).copy()
     elif fmt == "npy":
         path = ref["path"]
@@ -29,7 +36,14 @@ def decode(ref: Mapping, *, base_dir: Optional[str] = None) -> np.ndarray:
         arr = np.load(path)
     else:
         raise ValidationError(f"unsupported bulk format: {fmt!r}")
-    return arr.reshape(tuple(ref["shape"]))
+    # The decoded element count MUST equal the product of the declared shape (SPEC.md §8.5).
+    shape = tuple(ref["shape"])
+    expected = int(np.prod(shape)) if shape else arr.size
+    if arr.size != expected:
+        raise ValidationError(
+            f"bulk_ref element count {arr.size} does not match shape {list(shape)} "
+            f"(expected {expected})")
+    return arr.reshape(shape)
 
 
 def encode_base64(arr: np.ndarray) -> dict:

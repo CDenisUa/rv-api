@@ -135,8 +135,22 @@ _OPS: Dict[str, Callable[[Mapping], Op]] = {
     "abs": lambda p: Abs(),
 }
 
+#: Exact set of params each op accepts. exp/log/abs take none; unexpected keys are rejected rather
+#: than silently ignored (SPEC.md §5.3) - a malformed or LLM-generated op MUST NOT be misread.
+_OP_PARAMS: Dict[str, frozenset] = {
+    "affine": frozenset({"a", "b"}),
+    "exp": frozenset(),
+    "log": frozenset(),
+    "pow": frozenset({"exponent"}),
+    "abs": frozenset(),
+}
+
 
 def build_op(name: str, params: Optional[Mapping] = None) -> Op:
     if name not in _OPS:
         raise ValidationError(f"unknown transform op '{name}'")
-    return _OPS[name](params or {})
+    params = params or {}
+    extra = set(params) - _OP_PARAMS[name]
+    if extra:
+        raise ValidationError(f"op '{name}' got unexpected param(s): {sorted(extra)}")
+    return _OPS[name](params)

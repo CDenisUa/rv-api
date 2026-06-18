@@ -1,0 +1,17 @@
+{
+  "format_version": "1.1.0",
+  "rv": {
+    "dist": "empirical",
+    "kind": "leaf",
+    "params": {
+      "samples": {
+        "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "dtype": "float64",
+        "format": "base64",
+        "shape": [
+          2
+        ]
+      }
+    }
+  }
+}

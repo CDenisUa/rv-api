@@ -148,10 +148,26 @@ const OPS: Record<string, OpFactory> = {
   abs: () => new Abs(),
 }
 
+// Exact set of params each op accepts. exp/log/abs take none; unexpected keys are rejected rather
+// than silently ignored (SPEC.md §5.3) - a malformed or LLM-generated op MUST NOT be misread.
+const OP_PARAMS: Record<string, readonly string[]> = {
+  affine: ['a', 'b'],
+  exp: [],
+  log: [],
+  pow: ['exponent'],
+  abs: [],
+}
+
 export function buildOp(name: string, params?: Record<string, number>): Op {
   const factory = OPS[name]
   if (!factory) throw new ValidationError(`unknown transform op '${name}'`)
-  return factory(params ?? {})
+  const provided = params ?? {}
+  const allowed = OP_PARAMS[name]!
+  const extra = Object.keys(provided).filter((k) => !allowed.includes(k))
+  if (extra.length > 0) {
+    throw new ValidationError(`op '${name}' got unexpected param(s): ${extra.join(', ')}`)
+  }
+  return factory(provided)
 }
 
 function num(params: Record<string, number>, key: string, op: string): number {

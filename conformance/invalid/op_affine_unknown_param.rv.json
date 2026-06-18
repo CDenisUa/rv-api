@@ -1,0 +1,22 @@
+{
+  "format_version": "1.1.0",
+  "rv": {
+    "base": {
+      "dist": "normal",
+      "kind": "leaf",
+      "params": {
+        "mu": 0.0,
+        "sigma": 1.0
+      }
+    },
+    "kind": "transform",
+    "op": {
+      "name": "affine",
+      "params": {
+        "a": 2.0,
+        "b": 1.0,
+        "c": 9.0
+      }
+    }
+  }
+}

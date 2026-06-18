@@ -1,0 +1,50 @@
+{
+  "description": "Documents that every conforming reader MUST reject (structural or semantic validation). The cross-language negative contract; the harness asserts only that parsing is rejected.",
+  "cases": [
+    {
+      "name": "op_exp_extra_params",
+      "doc": "op_exp_extra_params.rv.json",
+      "reason": "exp is parameterless; a params object is invalid (op params MUST NOT be silently ignored)"
+    },
+    {
+      "name": "op_affine_unknown_param",
+      "doc": "op_affine_unknown_param.rv.json",
+      "reason": "affine accepts only a and b; an extra key c is invalid"
+    },
+    {
+      "name": "bulk_shape_mismatch",
+      "doc": "bulk_shape_mismatch.rv.json",
+      "reason": "declared shape [5] but only 3 decoded elements"
+    },
+    {
+      "name": "bulk_truncated_buffer",
+      "doc": "bulk_truncated_buffer.rv.json",
+      "reason": "20-byte float64 buffer is not a whole multiple of the 8-byte item size"
+    },
+    {
+      "name": "mixture_weights_length_mismatch",
+      "doc": "mixture_weights_length_mismatch.rv.json",
+      "reason": "one weight but two components (weights/components must align by index)"
+    },
+    {
+      "name": "mixture_weights_not_normalized",
+      "doc": "mixture_weights_not_normalized.rv.json",
+      "reason": "weights sum to 0.6, not 1"
+    },
+    {
+      "name": "capability_lie_abs",
+      "doc": "capability_lie_abs.rv.json",
+      "reason": "abs is non-invertible so can_log_prob must be false; the document declares it true"
+    },
+    {
+      "name": "future_major_version",
+      "doc": "future_major_version.rv.json",
+      "reason": "format MAJOR 2 exceeds the implemented major and must be rejected, not guessed"
+    },
+    {
+      "name": "transform_over_discrete_base",
+      "doc": "transform_over_discrete_base.rv.json",
+      "reason": "change-of-variables applies to densities; a transform over a discrete (poisson) base is invalid"
+    }
+  ]
+}
